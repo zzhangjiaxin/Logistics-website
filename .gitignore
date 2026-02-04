@@ -24,7 +24,7 @@ dist-ssr
 *.sw?
 
 # 精准忽略开发/生产环境的真实配置文件
-.env.development
-.env.production
+# .env.development
+# .env.production
 # 保留所有示例文件（.env.example/.env.production.example都生效）
 # !.env*example
