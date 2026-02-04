@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <link rel="icon" type="image/png" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="keywords" content="翔宇达,国际物流,翔宇达国际物流,一级货运代理公司,国际航空业务,PO航空美国总代">
+    <meta name="description" content="深圳市翔宇达运通国际货运代理有限公司，是专业从事全球性国际货物运输的一级货运代理公司，国际航空业务，PO航空美国总代。">
+    <meta name="format-detection" content="telephone=no">
+    <title>深圳市翔宇达运通国际货运代理有限公司</title>
+    <script>
+      // 根据当前路径立即设置标题，避免刷新时闪烁
+      (function() {
+        const path = window.location.pathname;
+        const routeTitles = {
+          '/admin': '后台管理',
+          '/admin/site-info': '站点信息 - 后台管理',
+          '/admin/navigation': '导航栏管理 - 后台管理',
+          '/admin/carousel': '轮播图管理 - 后台管理',
+          '/track': '信息查询 - 深圳市翔宇达运通国际货运代理有限公司',
+          '/aboutus': '关于我们 - 深圳市翔宇达运通国际货运代理有限公司',
+          '/business': '主营渠道 - 深圳市翔宇达运通国际货运代理有限公司',
+          '/business-1': '空派专线 - 深圳市翔宇达运通国际货运代理有限公司',
+          '/business-2': '海派专线 - 深圳市翔宇达运通国际货运代理有限公司',
+          '/business-3': '陆运专线 - 深圳市翔宇达运通国际货运代理有限公司',
+          '/news': '新闻中心 - 深圳市翔宇达运通国际货运代理有限公司',
+          '/news-1': '公司新闻 - 深圳市翔宇达运通国际货运代理有限公司',
+          '/news-2': '行业动态 - 深圳市翔宇达运通国际货运代理有限公司',
+          '/news-search': '搜索结果 - 新闻中心 - 深圳市翔宇达运通国际货运代理有限公司',
+          '/help': '帮助中心 - 深圳市翔宇达运通国际货运代理有限公司',
+          '/faq': '常见问题 - 深圳市翔宇达运通国际货运代理有限公司',
+          '/help-search': '搜索结果 - 帮助中心 - 深圳市翔宇达运通国际货运代理有限公司',
+          '/contact': '联系我们 - 深圳市翔宇达运通国际货运代理有限公司'
+        };
+
+        // 检查是否匹配到路由标题
+        if (routeTitles[path]) {
+          document.title = routeTitles[path];
+        } else if (path.startsWith('/news_ds-')) {
+          document.title = '新闻详情 - 深圳市翔宇达运通国际货运代理有限公司';
+        } else if (path.startsWith('/arts-')) {
+          document.title = '帮助中心 - 深圳市翔宇达运通国际货运代理有限公司';
+        } else if (path.startsWith('/arts_ds')) {
+          document.title = '帮助详情 - 深圳市翔宇达运通国际货运代理有限公司';
+        }
+        // 首页和其他未匹配的路径保持默认标题
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

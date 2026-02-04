@@ -1,0 +1,91 @@
+/* 自定义 Element Plus 消息提示样式 - 完全匹配源网页风格 */
+
+/* 覆盖 Element Plus Message 组件的默认样式 - 桌面端 */
+.el-message {
+  position: fixed !important;
+  /* 不设置 top，让 JavaScript 控制 */
+  left: 50% !important;
+  margin-left: -150px !important;
+  transform: none !important;
+  width: 300px !important;
+  min-width: 300px !important;
+  max-width: 300px !important;
+  padding: 32px 20px !important;
+  background-color: rgba(0, 0, 0, 0.7) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  z-index: 9999 !important;
+  overflow: hidden !important;
+  /* 不设置 margin-top，让 JavaScript 控制垂直居中 */
+  margin-right: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* 消息内容样式 - 桌面端 */
+.el-message__content {
+  color: #fff !important;
+  font-size: 22px !important;
+  line-height: 1.4 !important;
+  text-align: center !important;
+  padding: 0 !important;
+  font-weight: normal !important;
+  width: 100% !important;
+}
+
+/* 隐藏图标 */
+.el-message__icon {
+  display: none !important;
+}
+
+/* 隐藏关闭按钮（源网页没有关闭按钮） */
+.el-message__closeBtn {
+  display: none !important;
+}
+
+/* 不同类型的消息使用相同的样式 */
+.el-message.el-message--success,
+.el-message.el-message--warning,
+.el-message.el-message--info,
+.el-message.el-message--error {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+  border: none !important;
+}
+
+/* 自定义类名样式 */
+.el-message.custom-message {
+  position: fixed !important;
+  left: 50% !important;
+  margin-left: -150px !important;
+  transform: none !important;
+  width: 300px !important;
+  min-width: 300px !important;
+  max-width: 300px !important;
+}
+
+/* 移动端响应式样式 - 匹配源网页 @media only screen and (max-width: 640px) */
+@media only screen and (max-width: 640px) {
+  .el-message {
+    left: 10% !important;
+    margin-left: 0 !important;
+    width: 74% !important;
+    min-width: 74% !important;
+    max-width: 74% !important;
+    padding: 25px 3% !important;
+    border-radius: 6px !important;
+    z-index: 99999 !important;
+  }
+
+  .el-message__content {
+    font-size: 16px !important;
+    line-height: normal !important;
+  }
+
+  .el-message.custom-message {
+    left: 10% !important;
+    margin-left: 0 !important;
+    width: 74% !important;
+    min-width: 74% !important;
+    max-width: 74% !important;
+  }
+}
