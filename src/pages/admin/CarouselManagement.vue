@@ -15,12 +15,13 @@
             >
               <el-option label="全部分组" value="" />
               <el-option
-                v-for="nav in parentNavigationList"
-                :key="nav.id"
-                :value="nav.url === '/' ? 'home' : (nav.url.startsWith('/') ? nav.url.substring(1) : nav.url)"
-                :label="nav.name"
+                v-for="group in groupList"
+                :key="group.id"
+                :value="group.groupKey"
+                :label="group.groupName"
               >
-                <span>{{ nav.name }}</span>
+                <span>{{ group.groupName }}</span>
+                <span v-if="group.isEnabled === 0" style="margin-left: 8px; color: #F56C6C; font-size: 12px;">(已禁用)</span>
               </el-option>
             </el-select>
             <el-button type="primary" @click="showGroupDialog = true">
@@ -31,7 +32,7 @@
 
           <el-table
             ref="tableRef"
-            :data="filteredCarouselList"
+            :data="paginatedCarouselList"
             style="width: 100%"
             v-loading="loading"
             row-key="id"
@@ -39,7 +40,7 @@
           >
             <el-table-column label="序号" width="80">
               <template #default="{ $index }">
-                {{ $index + 1 }}
+                {{ (currentPage - 1) * pageSize + $index + 1 }}
               </template>
             </el-table-column>
             <el-table-column prop="title" label="标题" min-width="200" />
@@ -56,11 +57,10 @@
                 <el-image
                   v-if="row.imageUrl"
                   :src="getFullImageUrl(row.imageUrl)"
-                  :preview-src-list="[]"
+                  :preview-src-list="[getFullImageUrl(row.imageUrl)]"
                   :preview-teleported="true"
                   fit="cover"
                   style="width: 100px; height: 50px; border-radius: 4px; cursor: pointer;"
-                  @click="handleImagePreview(row.imageUrl)"
                 />
               </template>
             </el-table-column>
@@ -95,6 +95,18 @@
               </template>
             </el-table-column>
           </el-table>
+
+          <!-- 分页组件 -->
+          <el-pagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :page-sizes="[10, 20, 50, 100]"
+            :total="filteredCarouselList.length"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+            style="margin-top: 20px; justify-content: flex-end;"
+          />
         </el-tab-pane>
 
         <!-- 图片新增 -->
@@ -124,8 +136,33 @@
             </el-form-item>
 
             <el-form-item label="图片URL" prop="imageUrl">
-              <el-input v-model="addFormData.imageUrl" placeholder="请输入图片URL地址" />
-              <div class="form-tip">示例：/uploads/1/uploadfiles/banner1.jpg</div>
+              <div style="display: flex; gap: 10px; align-items: flex-start;">
+                <el-input
+                  v-model="addFormData.imageUrl"
+                  placeholder="请输入图片URL地址"
+                  style="flex: 1;"
+                />
+                <el-button type="primary">上传图片</el-button>
+              </div>
+              <div class="form-tip" style="margin-top: 5px;">
+                {{ addFormData.groupName === 'home' ? '建议尺寸：1920x600px，支持 jpg、png 格式' : '建议尺寸：1920x1080px，支持 jpg、png 格式' }}
+              </div>
+              <div v-if="addFormData.imageUrl" style="position: relative; display: inline-block; margin-top: 10px;">
+                <el-image
+                  :src="getFullImageUrl(addFormData.imageUrl)"
+                  :preview-src-list="[getFullImageUrl(addFormData.imageUrl)]"
+                  fit="cover"
+                  style="width: 300px; height: 150px; border-radius: 4px; border: 1px solid #dcdfe6;"
+                />
+                <el-button
+                  type="danger"
+                  :icon="Close"
+                  circle
+                  size="small"
+                  @click="addFormData.imageUrl = ''"
+                  style="position: absolute; top: -8px; right: -8px; z-index: 10;"
+                />
+              </div>
             </el-form-item>
 
             <el-form-item label="链接地址" prop="linkUrl">
@@ -219,16 +256,33 @@
             </el-form-item>
 
             <el-form-item label="图片URL" prop="imageUrl">
-              <el-input v-model="editFormData.imageUrl" placeholder="请输入图片URL地址" />
-              <div class="form-tip">示例：/uploads/1/uploadfiles/banner1.jpg</div>
-              <el-image
-                v-if="editFormData.imageUrl"
-                :src="getFullImageUrl(editFormData.imageUrl)"
-                :preview-src-list="[]"
-                fit="cover"
-                style="width: 200px; height: 100px; margin-top: 10px; border-radius: 4px; cursor: pointer;"
-                @click="handleImagePreview(editFormData.imageUrl)"
-              />
+              <div style="display: flex; gap: 10px; align-items: flex-start;">
+                <el-input
+                  v-model="editFormData.imageUrl"
+                  placeholder="请输入图片URL地址"
+                  style="flex: 1;"
+                />
+                <el-button type="primary">上传图片</el-button>
+              </div>
+              <div class="form-tip" style="margin-top: 5px;">
+                {{ editFormData.groupName === 'home' ? '建议尺寸：1920x600px，支持 jpg、png 格式' : '建议尺寸：1920x1080px，支持 jpg、png 格式' }}
+              </div>
+              <div v-if="editFormData.imageUrl" style="position: relative; display: inline-block; margin-top: 10px;">
+                <el-image
+                  :src="getFullImageUrl(editFormData.imageUrl)"
+                  :preview-src-list="[getFullImageUrl(editFormData.imageUrl)]"
+                  fit="cover"
+                  style="width: 300px; height: 150px; border-radius: 4px; border: 1px solid #dcdfe6;"
+                />
+                <el-button
+                  type="danger"
+                  :icon="Close"
+                  circle
+                  size="small"
+                  @click="editFormData.imageUrl = ''"
+                  style="position: absolute; top: -8px; right: -8px; z-index: 10;"
+                />
+              </div>
             </el-form-item>
 
             <el-form-item label="链接地址" prop="linkUrl">
@@ -453,8 +507,8 @@
 
 <script setup>
 import { ref, reactive, onMounted, watch, computed } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { FolderAdd, Plus } from '@element-plus/icons-vue'
+import { ElNotification, ElMessageBox } from 'element-plus'
+import { FolderAdd, Plus, Close } from '@element-plus/icons-vue'
 import { getCarouselList, createCarousel, updateCarousel, deleteCarousel, disableCarouselsByGroup } from '@/api/carousel'
 import {
   getCarouselGroupList,
@@ -477,6 +531,10 @@ const editFormRef = ref(null)
 const tableRef = ref(null)
 const isDataLoaded = ref(false)
 const showEditTab = ref(false)
+
+// 分页相关
+const currentPage = ref(1)
+const pageSize = ref(10)
 
 // 分组管理相关
 const showGroupDialog = ref(false)
@@ -588,7 +646,12 @@ const fetchCarouselList = async () => {
     // 数据加载完成后更新新增表单的排序值
     addFormData.sortOrder = getNextSortOrder()
   } catch (error) {
-    ElMessage.error('获取轮播图列表失败')
+    ElNotification({
+      title: '错误',
+      message: '获取轮播图列表失败',
+      type: 'error',
+      duration: 3000
+    })
   } finally {
     loading.value = false
     setTimeout(() => {
@@ -603,7 +666,12 @@ const fetchGroupList = async () => {
     const res = await getCarouselGroupList()
     groupList.value = res.data
   } catch (error) {
-    ElMessage.error('获取分组列表失败')
+    ElNotification({
+      title: '错误',
+      message: '获取分组列表失败',
+      type: 'error',
+      duration: 3000
+    })
   }
 }
 
@@ -621,9 +689,29 @@ const fetchNavigationTree = async () => {
 const getNavigationName = (groupName) => {
   if (!groupName) return ''
 
-  // 特殊处理：首页
-  if (groupName === 'home') {
-    return '首页'
+  // 预定义的导航名称映射
+  const navigationNames = {
+    'home': '首页',
+    'track': '信息查询',
+    'aboutus': '关于我们',
+    'business': '主营渠道',
+    'business-1': '空派专线',
+    'business-2': '海派专线',
+    'business-3': '陆运专线',
+    'news': '新闻中心',
+    'news-1': '公司新闻',
+    'news-2': '行业动态',
+    'news-detail': '新闻详情',
+    'news-search': '新闻搜索',
+    'help': '帮助中心',
+    'help-search': '帮助搜索',
+    'help-article': '帮助文章',
+    'contact': '联系我们'
+  }
+
+  // 如果在预定义映射中，直接返回
+  if (navigationNames[groupName]) {
+    return navigationNames[groupName]
   }
 
   // 处理特殊情况：去掉 URL 参数和锚点
@@ -725,73 +813,37 @@ const filteredCarouselList = computed(() => {
     return carouselList.value
   }
 
-  // 特殊处理：首页
-  if (selectedGroup.value === 'home') {
-    return carouselList.value.filter(item => item.groupName === 'home')
-  }
-
-  // 查找选中的父级导航
-  const selectedNav = navigationTree.value.find(nav => {
-    const navUrl = nav.url?.startsWith('/') ? nav.url.substring(1) : nav.url
-    const cleanNavUrl = navUrl.split('?')[0].split('#')[0]
-    return cleanNavUrl === selectedGroup.value
-  })
-
-  if (!selectedNav) {
-    return carouselList.value.filter(item => {
-      const cleanGroupName = item.groupName.split('?')[0].split('#')[0]
-      return cleanGroupName === selectedGroup.value
-    })
-  }
-
-  // 获取父级 URL（去掉 / 前缀）
-  const parentUrl = selectedNav.url?.startsWith('/') ? selectedNav.url.substring(1) : selectedNav.url
-  const cleanParentUrl = parentUrl.split('?')[0].split('#')[0]
-
-  // 获取父级及其所有子级的 URL
-  const urls = [cleanParentUrl]
-
-  if (selectedNav.children && selectedNav.children.length > 0) {
-    selectedNav.children.forEach(child => {
-      const childUrl = child.url?.startsWith('/') ? child.url.substring(1) : child.url
-      const cleanChildUrl = childUrl.split('?')[0].split('#')[0]
-      urls.push(cleanChildUrl)
-    })
-  }
-
-  // 筛选出匹配的轮播图
-  return carouselList.value.filter(item => {
-    const cleanGroupName = item.groupName.split('?')[0].split('#')[0]
-
-    // 精确匹配
-    if (urls.includes(cleanGroupName)) {
-      return true
-    }
-
-    // 匹配详情页和搜索页（如 news-detail、news-search 归类到 news）
-    if (cleanGroupName.includes('-detail') || cleanGroupName.includes('-search') || cleanGroupName.includes('-article')) {
-      const baseGroupName = cleanGroupName.split('-')[0]
-      if (baseGroupName === cleanParentUrl) {
-        return true
-      }
-    }
-
-    // 匹配以父级 URL 开头的数字编号（如 business-1、business-2 归类到 business）
-    // 但排除详情页、搜索页、文章页
-    if (cleanGroupName.startsWith(cleanParentUrl + '-') &&
-        !cleanGroupName.includes('-detail') &&
-        !cleanGroupName.includes('-search') &&
-        !cleanGroupName.includes('-article')) {
-      return true
-    }
-
-    return false
-  })
+  // 直接根据 groupKey 筛选
+  return carouselList.value.filter(item => item.groupName === selectedGroup.value)
 })
 
 // 处理分组筛选
 const handleGroupFilter = () => {
   // 筛选逻辑已通过 computed 实现
+  // 重置到第一页
+  currentPage.value = 1
+}
+
+// 分页后的数据（已排序）
+const paginatedCarouselList = computed(() => {
+  // 先对筛选后的数据进行排序
+  const sortedList = [...filteredCarouselList.value].sort(sortByGroup)
+
+  // 然后进行分页
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return sortedList.slice(start, end)
+})
+
+// 处理每页条数变化
+const handleSizeChange = (val) => {
+  pageSize.value = val
+  currentPage.value = 1
+}
+
+// 处理当前页变化
+const handleCurrentChange = (val) => {
+  currentPage.value = val
 }
 
 // 编辑表单的分组筛选列表
@@ -892,11 +944,21 @@ const handleDelete = async (row) => {
     })
 
     await deleteCarousel(row.id)
-    ElMessage.success('删除成功')
+    ElNotification({
+      title: '成功',
+      message: '删除成功',
+      type: 'success',
+      duration: 3000
+    })
     fetchCarouselList()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('删除失败')
+      ElNotification({
+        title: '错误',
+        message: '删除失败',
+        type: 'error',
+        duration: 3000
+      })
     }
   }
 }
@@ -916,10 +978,20 @@ const handleStatusChange = async (row) => {
       target: row.target,
       description: row.description
     })
-    ElMessage.success('状态更新成功')
+    ElNotification({
+      title: '成功',
+      message: '状态更新成功',
+      type: 'success',
+      duration: 3000
+    })
     fetchCarouselList()
   } catch (error) {
-    ElMessage.error('状态更新失败')
+    ElNotification({
+      title: '错误',
+      message: '状态更新失败',
+      type: 'error',
+      duration: 3000
+    })
     row.isEnabled = row.isEnabled === 1 ? 0 : 1
   }
 }
@@ -934,12 +1006,22 @@ const handleAddSubmit = async () => {
     submitting.value = true
     try {
       await createCarousel(addFormData)
-      ElMessage.success('创建成功')
+      ElNotification({
+        title: '成功',
+        message: '创建成功',
+        type: 'success',
+        duration: 3000
+      })
       resetAddForm()
       fetchCarouselList()
       activeTab.value = 'list'
     } catch (error) {
-      ElMessage.error('创建失败')
+      ElNotification({
+        title: '错误',
+        message: '创建失败',
+        type: 'error',
+        duration: 3000
+      })
     } finally {
       submitting.value = false
     }
@@ -956,7 +1038,12 @@ const handleEditSubmit = async () => {
     submitting.value = true
     try {
       await updateCarousel(editFormData.id, editFormData)
-      ElMessage.success('更新成功')
+      ElNotification({
+        title: '成功',
+        message: '更新成功',
+        type: 'success',
+        duration: 3000
+      })
 
       await fetchCarouselList()
 
@@ -966,7 +1053,12 @@ const handleEditSubmit = async () => {
         showEditTab.value = false
       }, 0)
     } catch (error) {
-      ElMessage.error('更新失败')
+      ElNotification({
+        title: '错误',
+        message: '更新失败',
+        type: 'error',
+        duration: 3000
+      })
     } finally {
       submitting.value = false
     }
@@ -1007,24 +1099,20 @@ const resetAddForm = () => {
 
 // 获取分组标签
 const getGroupLabel = (groupName) => {
+  // 先从分组列表中查找
+  const group = groupList.value.find(g => g.groupKey === groupName)
+  if (group) {
+    return group.groupName
+  }
+
+  // 如果没找到，尝试从导航中获取（兼容旧数据）
   return getNavigationName(groupName)
 }
 
 // 获取分组标签样式
 const getGroupTagStyle = (groupName) => {
-  // 处理特殊情况：去掉 URL 参数和锚点
-  const cleanGroupName = groupName.split('?')[0].split('#')[0]
-
-  // 提取基础分组名（去掉数字后缀、-detail、-search、-article）
-  let baseGroupName = cleanGroupName
-  if (cleanGroupName.includes('-detail') || cleanGroupName.includes('-search') || cleanGroupName.includes('-article')) {
-    baseGroupName = cleanGroupName.split('-')[0]
-  } else if (/^[a-z]+-\d+$/.test(cleanGroupName)) {
-    // 匹配 business-1、business-2 这种格式
-    baseGroupName = cleanGroupName.split('-')[0]
-  }
-
-  const styleMap = {
+  // 预定义的父级分组颜色方案
+  const parentColorSchemes = {
     // 首页 - 蓝色
     'home': { backgroundColor: '#E3F2FD', color: '#1976D2', borderColor: '#90CAF9' },
 
@@ -1034,26 +1122,76 @@ const getGroupTagStyle = (groupName) => {
     // 关于我们 - 绿色
     'aboutus': { backgroundColor: '#E8F5E9', color: '#388E3C', borderColor: '#81C784' },
 
-    // 主营渠道 - 橙色（所有子级统一使用橙色）
+    // 主营渠道 - 橙色
     'business': { backgroundColor: '#FFF3E0', color: '#E65100', borderColor: '#FFB74D' },
 
-    // 新闻中心 - 红色（所有子级统一使用红色）
+    // 新闻中心 - 红色
     'news': { backgroundColor: '#FFEBEE', color: '#C62828', borderColor: '#EF5350' },
 
-    // 帮助中心 - 青色（所有子级统一使用青色）
+    // 帮助中心 - 青色
     'help': { backgroundColor: '#E0F7FA', color: '#00838F', borderColor: '#4DD0E1' },
 
     // 联系我们 - 蓝灰色
     'contact': { backgroundColor: '#ECEFF1', color: '#37474F', borderColor: '#90A4AE' }
   }
 
-  const style = styleMap[baseGroupName] || { backgroundColor: '#F5F5F5', color: '#606266', borderColor: '#D3D3D3' }
+  // 1. 如果是预定义的父级分组，直接返回
+  if (parentColorSchemes[groupName]) {
+    const style = parentColorSchemes[groupName]
+    return {
+      backgroundColor: style.backgroundColor,
+      color: style.color,
+      borderColor: style.borderColor,
+      border: `1px solid ${style.borderColor}`
+    }
+  }
 
+  // 2. 检查是否是子菜单（格式：parent-1, parent-2, parent-detail, parent-search 等）
+  if (groupName.includes('-')) {
+    const parts = groupName.split('-')
+    const parentKey = parts[0] // 获取父级标识
+
+    // 如果父级在预定义颜色中，使用父级颜色
+    if (parentColorSchemes[parentKey]) {
+      const style = parentColorSchemes[parentKey]
+      return {
+        backgroundColor: style.backgroundColor,
+        color: style.color,
+        borderColor: style.borderColor,
+        border: `1px solid ${style.borderColor}`
+      }
+    }
+  }
+
+  // 3. 如果是自定义分组，从分组列表中查找
+  const group = groupList.value.find(g => g.groupKey === groupName)
+  if (group) {
+    // 自定义分组使用循环颜色方案
+    const customColorSchemes = [
+      { backgroundColor: '#FFF9C4', color: '#F57F17', borderColor: '#FFF176' }, // 黄色
+      { backgroundColor: '#FCE4EC', color: '#C2185B', borderColor: '#F48FB1' }, // 粉色
+      { backgroundColor: '#E8EAF6', color: '#283593', borderColor: '#9FA8DA' }, // 靛蓝色
+      { backgroundColor: '#E0F2F1', color: '#00695C', borderColor: '#80CBC4' }, // 青绿色
+      { backgroundColor: '#FBE9E7', color: '#BF360C', borderColor: '#FFAB91' }  // 深橙色
+    ]
+
+    const colorIndex = (group.sortOrder - 1) % customColorSchemes.length
+    const style = customColorSchemes[colorIndex]
+
+    return {
+      backgroundColor: style.backgroundColor,
+      color: style.color,
+      borderColor: style.borderColor,
+      border: `1px solid ${style.borderColor}`
+    }
+  }
+
+  // 4. 如果没找到分组，使用默认灰色
   return {
-    backgroundColor: style.backgroundColor,
-    color: style.color,
-    borderColor: style.borderColor,
-    border: `1px solid ${style.borderColor}`
+    backgroundColor: '#F5F5F5',
+    color: '#606266',
+    borderColor: '#D3D3D3',
+    border: '1px solid #D3D3D3'
   }
 }
 
@@ -1082,11 +1220,21 @@ const handleDeleteGroup = async (row) => {
     })
 
     await deleteCarouselGroup(row.id)
-    ElMessage.success('删除成功')
+    ElNotification({
+      title: '成功',
+      message: '删除成功',
+      type: 'success',
+      duration: 3000
+    })
     await fetchGroupList()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('删除失败')
+      ElNotification({
+        title: '错误',
+        message: '删除失败',
+        type: 'error',
+        duration: 3000
+      })
     }
   }
 }
@@ -1112,10 +1260,25 @@ const handleGroupStatusChange = async (row) => {
       sortOrder: row.sortOrder,
       isEnabled: row.isEnabled
     })
-    ElMessage.success('状态更新成功')
+    ElNotification({
+      title: '成功',
+      message: '状态更新成功',
+      type: 'success',
+      duration: 3000
+    })
     await fetchGroupList()
+
+    // 如果当前筛选的分组被启用，需要检查筛选状态
+    if (selectedGroup.value === row.groupKey) {
+      // 分组被启用后，筛选仍然有效，无需清空
+    }
   } catch (error) {
-    ElMessage.error('状态更新失败')
+    ElNotification({
+      title: '错误',
+      message: '状态更新失败',
+      type: 'error',
+      duration: 3000
+    })
     row.isEnabled = row.isEnabled === 1 ? 0 : 1
   }
 }
@@ -1138,20 +1301,46 @@ const confirmDisableGroup = async () => {
     // 2. 如果选择了同时禁用轮播图，调用批量禁用接口
     if (disableMode.value === 'group-and-carousels') {
       await disableCarouselsByGroup(currentDisablingGroup.value.groupKey)
-      ElMessage.success('分组已禁用，该分组下的所有轮播图也已禁用')
+      ElNotification({
+        title: '成功',
+        message: '分组已禁用，该分组下的所有轮播图也已禁用',
+        type: 'success',
+        duration: 3000
+      })
     } else {
-      ElMessage.success('分组已禁用，该分组下的轮播图不受影响')
+      ElNotification({
+        title: '成功',
+        message: '分组已禁用，该分组下的轮播图不受影响',
+        type: 'success',
+        duration: 3000
+      })
     }
 
     // 3. 刷新数据
     await fetchGroupList()
     await fetchCarouselList()
 
-    // 4. 关闭对话框
+    // 4. 如果当前筛选的是被禁用的分组，清空筛选
+    if (selectedGroup.value === currentDisablingGroup.value.groupKey) {
+      selectedGroup.value = ''
+      ElNotification({
+        title: '提示',
+        message: '当前筛选的分组已被禁用，已自动清空筛选',
+        type: 'info',
+        duration: 3000
+      })
+    }
+
+    // 5. 关闭对话框
     showDisableGroupDialog.value = false
     currentDisablingGroup.value = null
   } catch (error) {
-    ElMessage.error('禁用失败：' + (error.response?.data?.message || error.message))
+    ElNotification({
+      title: '错误',
+      message: '禁用失败：' + (error.response?.data?.message || error.message),
+      type: 'error',
+      duration: 3000
+    })
     // 恢复状态
     if (currentDisablingGroup.value) {
       currentDisablingGroup.value.isEnabled = 1
@@ -1168,30 +1357,68 @@ const isGroupDisabled = (groupKey) => {
 }
 
 // 分组排序方法
-// 分组排序方法
 const sortByGroup = (a, b) => {
-  // 定义分组的排序优先级
-  const groupOrder = {
+  // 定义导航顺序映射（根据前端导航栏顺序）
+  const navigationOrder = {
     'home': 0,           // 首页
     'track': 1,          // 信息查询
     'aboutus': 2,        // 关于我们
     'business': 3,       // 主营渠道
-    'business-1': 3.1,   // 空派专线
-    'business-2': 3.2,   // 海派专线
-    'business-3': 3.3,   // 陆运专线
     'news': 4,           // 新闻中心
-    'news-1': 4.1,       // 公司新闻
-    'news-2': 4.2,       // 行业动态
-    'news-detail': 4.3,  // 新闻详情
-    'news-search': 4.4,  // 新闻搜索
     'help': 5,           // 帮助中心
-    'help-search': 5.1,  // 帮助搜索
-    'help-article': 5.2, // 帮助文章
     'contact': 6         // 联系我们
   }
 
-  const orderA = groupOrder[a.groupName] ?? 999
-  const orderB = groupOrder[b.groupName] ?? 999
+  // 获取排序值
+  const getOrder = (groupName) => {
+    // 1. 如果是预定义的父级导航，使用定义的顺序
+    if (navigationOrder[groupName] !== undefined) {
+      return navigationOrder[groupName]
+    }
+
+    // 2. 如果是子菜单（格式：parent-1, parent-2, parent-detail 等）
+    if (groupName.includes('-')) {
+      const parts = groupName.split('-')
+      const parentKey = parts[0] // 获取父级标识
+      const suffix = parts.slice(1).join('-') // 获取后缀部分
+
+      // 如果父级在导航顺序中
+      if (navigationOrder[parentKey] !== undefined) {
+        const parentOrder = navigationOrder[parentKey]
+
+        // 根据后缀类型确定子顺序
+        // 数字后缀（如 business-1, business-2）
+        if (/^\d+$/.test(suffix)) {
+          return parentOrder + (parseInt(suffix) * 0.1)
+        }
+        // 特殊后缀（如 detail, search, article）
+        else if (suffix === 'detail') {
+          return parentOrder + 0.8
+        } else if (suffix === 'search') {
+          return parentOrder + 0.9
+        } else if (suffix === 'article') {
+          return parentOrder + 0.85
+        }
+        // 其他后缀，按字母顺序
+        else {
+          return parentOrder + 0.5
+        }
+      }
+    }
+
+    // 3. 如果是自定义分组，从分组列表中查找
+    const group = groupList.value.find(g => g.groupKey === groupName)
+    if (group) {
+      // 自定义分组排在导航分组之后，使用 100 + sortOrder
+      return 100 + group.sortOrder
+    }
+
+    // 4. 未知分组排在最后
+    return 999
+  }
+
+  const orderA = getOrder(a.groupName)
+  const orderB = getOrder(b.groupName)
 
   return orderA - orderB
 }
@@ -1208,17 +1435,34 @@ const handleGroupSubmit = async () => {
       if (editingGroup.value) {
         // 编辑
         await updateCarouselGroup(editingGroup.value.id, groupFormData)
-        ElMessage.success('更新成功')
+        ElNotification({
+          title: '成功',
+          message: '更新成功',
+          type: 'success',
+          duration: 3000
+        })
       } else {
         // 新增
         await createCarouselGroup(groupFormData)
-        ElMessage.success('创建成功')
+        ElNotification({
+          title: '成功',
+          message: '创建成功',
+          type: 'success',
+          duration: 3000
+        })
       }
 
       showAddGroupForm.value = false
       await fetchGroupList()
+      // 刷新轮播图列表，以便更新分组显示
+      await fetchCarouselList()
     } catch (error) {
-      ElMessage.error(editingGroup.value ? '更新失败' : '创建失败：' + (error.response?.data?.message || error.message))
+      ElNotification({
+        title: '错误',
+        message: editingGroup.value ? '更新失败' : '创建失败：' + (error.response?.data?.message || error.message),
+        type: 'error',
+        duration: 3000
+      })
     } finally {
       groupSubmitting.value = false
     }
@@ -1380,11 +1624,17 @@ onMounted(() => {
 
 <style scoped>
 .carousel-management {
-  padding: 20px;
+  padding: 24px;
+  min-height: calc(100vh - 100px);
+  background-color: #f5f7fa;
 }
 
 .main-card {
+  max-width: 1400px;
+  margin: 0 auto;
   min-height: 500px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 
 .form-tip {
@@ -1393,17 +1643,110 @@ onMounted(() => {
   margin-top: 4px;
 }
 
-/* 移除表格外边框 */
+/* Tab 优化样式 */
+:deep(.el-card__body) {
+  padding: 20px;
+}
+
+:deep(.el-tabs__header) {
+  margin-bottom: 0;
+  border-bottom: 2px solid #e4e7ed;
+}
+
+:deep(.el-tabs__item) {
+  font-size: 16px;
+  font-weight: 500;
+  padding: 0 24px;
+  height: 48px;
+  line-height: 48px;
+  color: #606266;
+  transition: all 0.3s;
+}
+
+:deep(.el-tabs__item:hover) {
+  color: #409eff;
+}
+
+:deep(.el-tabs__item.is-active) {
+  color: #409eff;
+  font-weight: 600;
+}
+
+:deep(.el-tabs__active-bar) {
+  height: 3px;
+  background-color: #409eff;
+}
+
+:deep(.el-tabs__content) {
+  padding: 24px 20px;
+}
+
+/* 表格优化样式 */
 :deep(.el-table) {
   border: none !important;
+  font-size: 14px;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 :deep(.el-table::before) {
   display: none;
 }
 
-/* 标签页样式 */
-:deep(.el-tabs__content) {
-  padding: 10px 0;
+:deep(.el-table th.el-table__cell) {
+  background-color: #f5f7fa;
+  color: #606266;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 14px 0;
+}
+
+:deep(.el-table td.el-table__cell) {
+  padding: 16px 0;
+}
+
+:deep(.el-table .cell) {
+  padding: 0 12px;
+  line-height: 1.6;
+}
+
+:deep(.el-table--border) {
+  border: 1px solid #ebeef5;
+}
+
+:deep(.el-tag) {
+  border-radius: 4px;
+  padding: 0 12px;
+  font-weight: 500;
+}
+
+/* 表单优化样式 */
+:deep(.el-form) {
+  padding-top: 10px;
+}
+
+:deep(.el-form-item__label) {
+  font-weight: 500;
+  color: #606266;
+}
+
+:deep(.el-button) {
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+/* 分页优化样式 */
+:deep(.el-pagination) {
+  margin-top: 20px;
+  justify-content: center;
+}
+
+:deep(.el-pagination button) {
+  border-radius: 4px;
+}
+
+:deep(.el-pagination .el-pager li) {
+  border-radius: 4px;
+  font-weight: 500;
 }
 </style>

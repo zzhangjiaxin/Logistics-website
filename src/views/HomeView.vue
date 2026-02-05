@@ -106,50 +106,27 @@
         <div class="cont">
           <div class="text">
             <div class="editorc">
-              <p>{{ statistics.years }}年以上<br>
-              专注跨境货运<br>
-              高效集成专家<br>
-              在中国、越南的跨境物流</p>
+              <p v-html="formatDescription(aboutData.description)"></p>
             </div>
             <ul class="szys">
-              <li>
-                <div class="tis"><span class="counter">{{ statistics.branches }}</span><span class="wz"></span></div>
-                <p class="desc">{{ statistics.branches }}个分公司</p>
-              </li>
-              <li>
-                <div class="tis"><span class="counter">{{ statistics.years }}</span><span class="wz"></span></div>
-                <p class="desc">{{ statistics.years }}年以上</p>
-              </li>
-              <li>
-                <div class="tis"><span class="counter">{{ statistics.countries }}</span><span class="wz"></span></div>
-                <p class="desc">{{ statistics.countries }}多个国家</p>
-              </li>
-              <li>
-                <div class="tis"><span class="counter">{{ statistics.partners }}</span><span class="wz"></span></div>
-                <p class="desc">{{ statistics.partners }}多家合作伙伴</p>
-              </li>
-              <li>
-                <div class="tis"><span class="counter">{{ statistics.revenue }}</span><span class="wz">亿</span></div>
-                <p class="desc">年收入{{ statistics.revenue }}亿元</p>
+              <li v-for="card in enabledCards" :key="card.id">
+                <div class="tis"><span class="counter">{{ card.cardNumber }}</span><span class="wz"></span></div>
+                <p class="desc">{{ card.cardLabel }}</p>
               </li>
             </ul>
           </div>
           <div class="imgs">
-            <img src="@/assets/uploadfiles/20230801-171809.png" alt="">
+            <img :src="getImageUrl(aboutData.mainImage)" alt="">
           </div>
         </div>
         <div class="pics">
-          <router-link to="/aboutus#dw2">
-            <div><img src="@/assets/uploadfiles/20230803-191508.png" alt=""></div>
-            <p>企业文化</p>
-          </router-link>
-          <router-link to="/aboutus#dw2">
-            <div><img src="@/assets/uploadfiles/20230803-191518.png" alt=""></div>
-            <p>发展历程</p>
-          </router-link>
-          <router-link to="/aboutus#dw2">
-            <div><img src="@/assets/uploadfiles/20230803-191541.png" alt=""></div>
-            <p>荣誉资质</p>
+          <router-link
+            v-for="img in enabledBottomImages"
+            :key="img.id"
+            :to="img.linkUrl || '/aboutus#dw2'"
+          >
+            <div><img :src="getImageUrl(img.imageUrl)" :alt="img.imageTitle"></div>
+            <p>{{ img.imageTitle }}</p>
           </router-link>
         </div>
       </div>
@@ -226,7 +203,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onActivated } from 'vue'
+import { ref, computed, onMounted, onActivated } from 'vue'
 import { useRouter } from 'vue-router'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Pagination, Autoplay } from 'swiper/modules'
@@ -234,6 +211,7 @@ import { showMessage } from '@/utils/message'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import { useScrollPosition } from '@/composables/useScrollPosition'
 import { getEnabledNavigationTree } from '@/api/navigation'
+import { getPublicHomeAboutInfo } from '@/api/homeAbout'
 
 // 使用滚动位置保持
 useScrollPosition()
@@ -244,26 +222,36 @@ const modules = [Pagination, Autoplay]
 // 运单查询
 const trackNumber = ref('')
 
-// 查询类型子导航列表（从"信息查询"的子导航获取）
+// 查询类型子导航列表（动态获取，不依赖父级导航名称）
 const trackTypeNavs = ref([])
 
 // 加载启用的查询类型导航
 const loadTrackTypeNavs = async () => {
   try {
+    console.log('[首页] 开始加载查询类型导航...')
     const res = await getEnabledNavigationTree()
+    console.log('[首页] 导航 API 响应:', res)
+
     if (res.data && res.data.length > 0) {
-      // 找到"信息查询"的子导航
-      const infoQueryNav = res.data.find(nav => nav.name === '信息查询')
+      // 通过 code 字段查找导航（最稳定，不受管理员修改名称和URL影响）
+      const infoQueryNav = res.data.find(nav => nav.code === 'track_query')
+
+      console.log('[首页] 找到的查询导航:', infoQueryNav)
+
       if (infoQueryNav && infoQueryNav.children && infoQueryNav.children.length > 0) {
         trackTypeNavs.value = infoQueryNav.children
+        console.log('[首页] 查询类型子菜单:', trackTypeNavs.value)
+      } else {
+        console.warn('[首页] 没有找到查询类型子菜单')
       }
     }
   } catch (error) {
-    console.error('获取导航配置失败', error)
+    console.error('[首页] 获取导航配置失败', error)
     // 使用默认配置
     trackTypeNavs.value = [
       { name: '运单查询', url: '/track', sortOrder: 1 }
     ]
+    console.log('[首页] 使用默认配置')
   }
 }
 
@@ -297,12 +285,104 @@ const handleTrack = () => {
 onMounted(() => {
   // 加载启用的查询类型导航
   loadTrackTypeNavs()
+  // 加载关于我们信息
+  loadAboutInfo()
 })
 
 // 每次页面激活时重新加载导航配置（解决从后台切换回来时数据不更新的问题）
 onActivated(() => {
   loadTrackTypeNavs()
+  loadAboutInfo()
 })
+
+// 关于我们数据
+const aboutData = ref({
+  description: '',
+  mainImage: '',
+  cards: [],
+  bottomImages: []
+})
+
+// 计算属性：启用的数字卡片
+const enabledCards = computed(() => {
+  return aboutData.value.cards.filter(card => card.isEnabled === 1)
+})
+
+// 计算属性：启用的底部图片
+const enabledBottomImages = computed(() => {
+  return aboutData.value.bottomImages.filter(img => img.isEnabled === 1)
+})
+
+// 格式化描述文字（将 \n 转换为 <br>）
+const formatDescription = (description) => {
+  if (!description) {
+    return '15年以上<br>专注跨境货运<br>高效集成专家<br>在中国、越南的跨境物流'
+  }
+  // 将 \n 转换为 <br>
+  return description.replace(/\n/g, '<br>')
+}
+
+// 获取图片完整 URL
+const getImageUrl = (path) => {
+  if (!path) {
+    return ''
+  }
+  // 如果是完整的 URL，直接返回
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path
+  }
+  // 如果是相对路径，加上后端 BASE_URL 和 /api 前缀
+  if (path.startsWith('/uploads/')) {
+    return 'http://localhost:8080/api' + path
+  }
+  return path
+}
+
+// 加载关于我们信息
+const loadAboutInfo = async () => {
+  try {
+    // 添加时间戳参数，防止浏览器缓存
+    const timestamp = new Date().getTime()
+    const res = await getPublicHomeAboutInfo()
+
+    console.log(`[${new Date().toLocaleTimeString()}] 关于我们 API 响应:`, res)
+
+    if (res && res.data) {
+      aboutData.value = res.data
+      console.log(`[${new Date().toLocaleTimeString()}] 关于我们数据已更新:`, aboutData.value)
+      console.log('✅ 数据加载成功 - 数字卡片:', aboutData.value.cards?.length || 0, '个')
+      console.log('✅ 数据加载成功 - 底部图片:', aboutData.value.bottomImages?.length || 0, '张')
+    } else {
+      console.warn('⚠️ API 返回数据为空，使用默认数据')
+      useDefaultData()
+    }
+  } catch (error) {
+    console.error('❌ 获取关于我们信息失败:', error)
+    console.error('错误详情:', error.message)
+    useDefaultData()
+  }
+}
+
+// 使用默认数据
+const useDefaultData = () => {
+  aboutData.value = {
+    description: '15年以上\n专注跨境货运\n高效集成专家\n在中国、越南的跨境物流',
+    mainImage: '',
+    cards: [
+      { id: 1, cardNumber: '5', cardLabel: '5个分公司', isEnabled: 1 },
+      { id: 2, cardNumber: '15', cardLabel: '15年以上', isEnabled: 1 },
+      { id: 3, cardNumber: '30', cardLabel: '30多个国家', isEnabled: 1 },
+      { id: 4, cardNumber: '500', cardLabel: '500多家合作伙伴', isEnabled: 1 },
+      { id: 5, cardNumber: '6', cardLabel: '年收入6亿元', isEnabled: 1 }
+    ],
+    bottomImages: [
+      { id: 1, imageUrl: '', imageTitle: '企业文化', linkUrl: '/aboutus#dw2', isEnabled: 1 },
+      { id: 2, imageUrl: '', imageTitle: '发展历程', linkUrl: '/aboutus#dw2', isEnabled: 1 },
+      { id: 3, imageUrl: '', imageTitle: '荣誉资质', linkUrl: '/aboutus#dw2', isEnabled: 1 }
+    ]
+  }
+  console.log('📦 使用默认数据')
+}
 
 // Banner图片
 import banner1 from '@/assets/uploadfiles/20230817-094143.jpg'
@@ -382,13 +462,6 @@ const featuredNews = [
     image: news4Bg
   }
 ]
-const statistics = {
-  branches: 4,
-  years: 14,
-  countries: 20,
-  partners: 50,
-  revenue: 6
-}
 </script>
 
 <style scoped>

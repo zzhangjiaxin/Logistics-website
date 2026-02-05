@@ -1,31 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useSiteStore } from '@/stores'
+import { generateRoutes } from './dynamicRoutes'
 
-const routes = [
+// 静态路由（不会被管理员修改的路由）
+const staticRoutes = [
   {
     path: '/',
     name: 'Home',
     component: () => import('../views/HomeView.vue'),
     meta: { navIndex: 0 }
   },
-  {
-    path: '/track',
-    name: 'Track',
-    component: () => import('../views/TrackView.vue'),
-    meta: { title: '信息查询', navIndex: 1 }
-  },
-  {
-    path: '/aboutus',
-    name: 'About',
-    component: () => import('../views/AboutView.vue'),
-    meta: { title: '关于我们', navIndex: 2 }
-  },
-  {
-    path: '/business',
-    name: 'Business',
-    component: () => import('../views/BusinessView.vue'),
-    meta: { title: '主营渠道', navIndex: 3 }
-  },
+  // 注意：主要页面路由（/track, /aboutus, /business 等）将由动态路由注册
+  // 这里只保留详情页和特殊页面的路由
   {
     path: '/business-1',
     name: 'BusinessAir',
@@ -45,24 +31,6 @@ const routes = [
     meta: { title: '陆运专线', navIndex: 3, type: 3 }
   },
   {
-    path: '/news',
-    name: 'News',
-    component: () => import('../views/NewsView.vue'),
-    meta: { title: '新闻中心', navIndex: 4 }
-  },
-  {
-    path: '/news-1',
-    name: 'NewsCompany',
-    component: () => import('../views/NewsCategoryView.vue'),
-    meta: { title: '公司新闻', navIndex: 4, category: 1 }
-  },
-  {
-    path: '/news-2',
-    name: 'NewsIndustry',
-    component: () => import('../views/NewsCategoryView.vue'),
-    meta: { title: '行业动态', navIndex: 4, category: 2 }
-  },
-  {
     path: '/news-search',
     name: 'NewsSearch',
     component: () => import('../views/NewsSearchView.vue'),
@@ -74,18 +42,6 @@ const routes = [
     component: () => import('../views/NewsDetailView.vue'),
     meta: { title: '新闻详情', navIndex: 4 },
     props: true
-  },
-  {
-    path: '/help',
-    name: 'Help',
-    component: () => import('../views/HelpView.vue'),
-    meta: { title: '帮助中心', navIndex: 5 }
-  },
-  {
-    path: '/faq',
-    name: 'FAQ',
-    component: () => import('../views/HelpView.vue'),
-    meta: { title: '常见问题', navIndex: 5, isFaqPage: true }
   },
   {
     path: '/help-search',
@@ -105,12 +61,6 @@ const routes = [
     component: () => import('../views/HelpArticleView.vue'),
     meta: { title: '帮助详情', navIndex: 5 },
     props: true
-  },
-  {
-    path: '/contact',
-    name: 'Contact',
-    component: () => import('../views/ContactView.vue'),
-    meta: { title: '联系我们', navIndex: 6 }
   },
   // 后台管理路由（使用独立布局）
   {
@@ -141,6 +91,12 @@ const routes = [
         name: 'CarouselManagement',
         component: () => import('../pages/admin/CarouselManagement.vue'),
         meta: { title: '轮播图管理 - 后台管理', requiresAuth: true }
+      },
+      {
+        path: 'system-settings',
+        name: 'SystemSettings',
+        component: () => import('../pages/admin/SystemSettings.vue'),
+        meta: { title: '系统设置 - 后台管理', requiresAuth: true }
       }
     ]
   },
@@ -155,7 +111,7 @@ const routes = [
 
 const router = createRouter({
   history: createWebHistory(),
-  routes,
+  routes: staticRoutes,
   scrollBehavior(to, from, savedPosition) {
     return new Promise((resolve) => {
       // 如果有锚点，滚动到锚点位置
@@ -194,28 +150,30 @@ const router = createRouter({
   }
 })
 
-// 路由守卫 - 设置页面标题
-router.beforeEach((to, from, next) => {
-  next()
-})
+/**
+ * 注册动态路由
+ * @param {Array} navigations - 后端返回的导航列表
+ */
+export function registerDynamicRoutes(navigations) {
+  console.log('[路由] 开始注册动态路由...')
 
-// 路由守卫 - 设置页面标题
-router.afterEach((to) => {
-  const siteStore = useSiteStore()
-  const siteTitle = siteStore.siteInfo.siteTitle || '深圳市翔宇达运通国际货运代理有限公司'
+  // 生成动态路由配置
+  const dynamicRoutes = generateRoutes(navigations)
 
-  // 后台管理路由：使用固定标题
-  if (to.path.startsWith('/admin')) {
-    document.title = to.meta.title || '后台管理'
-  }
-  // 前端展示路由：拼接页面名称和站点名称
-  else if (to.meta.title) {
-    document.title = `${to.meta.title} - ${siteTitle}`
-  }
-  // 首页：只显示站点名称
-  else {
-    document.title = siteTitle
-  }
-})
+  // 注册动态路由
+  dynamicRoutes.forEach(route => {
+    // 检查路由是否已存在
+    if (!router.hasRoute(route.name)) {
+      router.addRoute(route)
+      console.log(`[路由] 已注册: ${route.path} -> ${route.name}`)
+    } else {
+      console.log(`[路由] 跳过已存在的路由: ${route.name}`)
+    }
+  })
+
+  console.log(`[路由] 动态路由注册完成，共注册 ${dynamicRoutes.length} 个路由`)
+
+  return dynamicRoutes
+}
 
 export default router

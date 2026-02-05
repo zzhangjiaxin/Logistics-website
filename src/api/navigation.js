@@ -85,11 +85,22 @@ export function getNavigationTree() {
 
 /**
  * 获取启用的树形结构导航列表（前端展示用）
+ * 每次请求都会获取最新数据，不使用缓存
  */
 export function getEnabledNavigationTree() {
   return request({
     url: '/tenant/navigation/enabled/tree',
-    method: 'get'
+    method: 'get',
+    // 添加时间戳参数，防止浏览器缓存
+    params: {
+      _t: new Date().getTime()
+    },
+    // 禁用缓存
+    headers: {
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
   })
 }
 

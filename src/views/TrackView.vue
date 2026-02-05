@@ -280,12 +280,19 @@ const handleQuery = () => {
 // 加载启用的查询类型导航
 const loadTrackTypeNavs = async () => {
   try {
+    console.log('[查询页面] 开始加载查询类型导航...')
     const res = await getEnabledNavigationTree()
+    console.log('[查询页面] 导航 API 响应:', res)
+
     if (res.data && res.data.length > 0) {
-      // 找到"信息查询"的子导航
-      const infoQueryNav = res.data.find(nav => nav.name === '信息查询')
+      // 通过 code 字段查找导航（最稳定，不受管理员修改名称和URL影响）
+      const infoQueryNav = res.data.find(nav => nav.code === 'track_query')
+
+      console.log('[查询页面] 找到的查询导航:', infoQueryNav)
+
       if (infoQueryNav && infoQueryNav.children && infoQueryNav.children.length > 0) {
         trackTypeNavs.value = infoQueryNav.children
+        console.log('[查询页面] 查询类型子菜单:', trackTypeNavs.value)
 
         // 如果当前激活的Tab被禁用了，切换到第一个启用的类型
         if (!isTypeEnabled(activeTab.value)) {
@@ -300,16 +307,18 @@ const loadTrackTypeNavs = async () => {
           }
         }
       } else {
+        console.warn('[查询页面] 没有找到查询类型子菜单')
         showMessage('查询功能暂时不可用')
       }
     }
   } catch (error) {
-    console.error('获取导航配置失败', error)
+    console.error('[查询页面] 获取导航配置失败', error)
     // 使用默认配置
     trackTypeNavs.value = [
       { name: '运单查询', url: '/track', sortOrder: 1 },
       { name: '包裹查询', url: '/track?type=parcel', sortOrder: 2 }
     ]
+    console.log('[查询页面] 使用默认配置')
   }
 }
 

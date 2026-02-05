@@ -117,8 +117,16 @@
             </el-form-item>
 
             <el-form-item label="URL名称" prop="url">
-              <el-input v-model="addFormData.url" placeholder="请输入路径，如：track 或 about" @blur="formatAddUrl" />
+              <el-input v-model="addFormData.url" placeholder="请输入路径，如：track 或 about" @blur="handleUrlBlur" />
               <div class="form-tip">输入路径名即可，如：track、about，系统会自动添加 /</div>
+            </el-form-item>
+
+            <el-form-item label="标识码" prop="code">
+              <el-input v-model="addFormData.code" placeholder="根据URL自动生成，如：track_query" />
+              <div class="form-tip">
+                用于前端识别导航，支持动态路由。<strong>根据URL自动生成</strong>，也可手动修改。
+                <el-button type="text" size="small" @click="generateCodeFromUrl">重新生成</el-button>
+              </div>
             </el-form-item>
 
             <el-form-item label="排序顺序" prop="sortOrder">
@@ -200,8 +208,16 @@
             </el-form-item>
 
             <el-form-item label="URL名称" prop="url">
-              <el-input v-model="editFormData.url" placeholder="请输入路径，如：track 或 about" @blur="formatEditUrl" />
+              <el-input v-model="editFormData.url" placeholder="请输入路径，如：track 或 about" @blur="handleEditUrlBlur" />
               <div class="form-tip">输入路径名即可，如：track、about，系统会自动添加 /</div>
+            </el-form-item>
+
+            <el-form-item label="标识码" prop="code">
+              <el-input v-model="editFormData.code" placeholder="根据URL自动生成，如：track_query" />
+              <div class="form-tip">
+                用于前端识别导航，支持动态路由。<strong>根据URL自动生成</strong>，修改后需刷新前端页面生效。
+                <el-button type="text" size="small" @click="generateCodeFromEditUrl">重新生成</el-button>
+              </div>
             </el-form-item>
 
             <el-form-item label="排序顺序" prop="sortOrder">
@@ -253,7 +269,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElNotification, ElMessageBox } from 'element-plus'
 import { ArrowRight } from '@element-plus/icons-vue'
 import { getNavigationTree, getTopLevelNavigation, createNavigation, updateNavigation, deleteNavigation } from '@/api/navigation'
 
@@ -272,6 +288,7 @@ const showEditTab = ref(false)
 // 新增表单数据
 const addFormData = reactive({
   name: '',
+  code: '',
   url: '',
   parentId: null,
   sortOrder: null,
@@ -285,6 +302,7 @@ const addFormData = reactive({
 const editFormData = reactive({
   id: null,
   name: '',
+  code: '',
   url: '',
   parentId: null,
   sortOrder: null,
@@ -340,7 +358,12 @@ const fetchNavigationTree = async () => {
     // 数据加载完成后更新新增表单的排序值
     addFormData.sortOrder = getNextSortOrder(addFormData.parentId)
   } catch (error) {
-    ElMessage.error('获取导航列表失败')
+    ElNotification({
+      title: '错误',
+      message: '获取导航列表失败',
+      type: 'error',
+      duration: 3000
+    })
   } finally {
     loading.value = false
     setTimeout(() => {
@@ -445,6 +468,7 @@ const handleEditNavChange = (navId) => {
 
   if (nav) {
     editFormData.name = nav.name
+    editFormData.code = nav.code || ''
     editFormData.url = displayUrl(nav.url)
     editFormData.parentId = nav.parentId
     editFormData.sortOrder = nav.sortOrder
@@ -466,6 +490,7 @@ const handleEdit = (row) => {
   Object.assign(editFormData, {
     id: row.id,
     name: row.name,
+    code: row.code || '',
     url: displayUrl(row.url),
     parentId: row.parentId,
     sortOrder: row.sortOrder,
@@ -494,12 +519,22 @@ const handleDelete = async (row) => {
     })
 
     await deleteNavigation(row.id)
-    ElMessage.success('删除成功')
+    ElNotification({
+      title: '成功',
+      message: '删除成功',
+      type: 'success',
+      duration: 3000
+    })
     fetchNavigationTree()
     fetchTopLevelList()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('删除失败')
+      ElNotification({
+        title: '错误',
+        message: '删除失败',
+        type: 'error',
+        duration: 3000
+      })
     }
   }
 }
@@ -519,10 +554,20 @@ const handleStatusChange = async (row) => {
       target: row.target,
       icon: row.icon
     })
-    ElMessage.success('状态更新成功')
+    ElNotification({
+      title: '成功',
+      message: '状态更新成功',
+      type: 'success',
+      duration: 3000
+    })
     fetchNavigationTree()
   } catch (error) {
-    ElMessage.error('状态更新失败')
+    ElNotification({
+      title: '错误',
+      message: '状态更新失败',
+      type: 'error',
+      duration: 3000
+    })
     row.isEnabled = row.isEnabled === 1 ? 0 : 1
   }
 }
@@ -547,13 +592,23 @@ const handleAddSubmit = async () => {
       }
 
       await createNavigation(submitData)
-      ElMessage.success('创建成功')
+      ElNotification({
+        title: '成功',
+        message: '创建成功',
+        type: 'success',
+        duration: 3000
+      })
       resetAddForm()
       fetchNavigationTree()
       fetchTopLevelList()
       activeTab.value = 'list'
     } catch (error) {
-      ElMessage.error('创建失败')
+      ElNotification({
+        title: '错误',
+        message: '创建失败',
+        type: 'error',
+        duration: 3000
+      })
     } finally {
       submitting.value = false
     }
@@ -595,7 +650,12 @@ const handleEditSubmit = async () => {
       }
 
       await updateNavigation(editFormData.id, submitData)
-      ElMessage.success('更新成功')
+      ElNotification({
+        title: '成功',
+        message: '更新成功',
+        type: 'success',
+        duration: 3000
+      })
 
       // 保存父级ID用于恢复展开状态
       const parentIdToRestore = editingParentId.value
@@ -630,7 +690,12 @@ const handleEditSubmit = async () => {
         editingParentId.value = null
       }, 0)
     } catch (error) {
-      ElMessage.error('更新失败')
+      ElNotification({
+        title: '错误',
+        message: '更新失败',
+        type: 'error',
+        duration: 3000
+      })
     } finally {
       submitting.value = false
     }
@@ -711,9 +776,127 @@ const formatEditUrl = () => {
   // 不做处理，保持用户输入的原样显示
 }
 
+/**
+ * 根据 URL 自动生成 code（新增表单）
+ * URL 是稳定的标识符，code 应该和 URL 对应
+ */
+const generateCodeFromUrl = () => {
+  const url = addFormData.url.trim()
+  if (!url) return ''
+
+  // 去掉开头的 /
+  let cleanUrl = url.startsWith('/') ? url.substring(1) : url
+
+  // 去掉查询参数和锚点
+  cleanUrl = cleanUrl.split('?')[0].split('#')[0]
+
+  // 如果有父级，获取父级的 code 作为前缀
+  let code = ''
+  if (addFormData.parentId) {
+    const parent = navigationTree.value.find(nav => nav.id === addFormData.parentId)
+    if (parent && parent.code) {
+      code = parent.code + '_'
+    }
+  }
+
+  // 将 URL 转换为 code
+  // 例如：track -> track, business-1 -> business_1, aboutus#dw1 -> aboutus
+  const urlCode = cleanUrl
+    .toLowerCase()
+    .replace(/-/g, '_')  // 将 - 替换为 _
+    .replace(/\//g, '_') // 将 / 替换为 _
+    .replace(/[^a-z0-9_]/g, '') // 去掉其他特殊字符
+
+  code += urlCode
+
+  addFormData.code = code
+}
+
+/**
+ * 根据 URL 自动生成 code（修改表单）
+ */
+const generateCodeFromEditUrl = () => {
+  const url = editFormData.url.trim()
+  if (!url) return ''
+
+  // 去掉开头的 /
+  let cleanUrl = url.startsWith('/') ? url.substring(1) : url
+
+  // 去掉查询参数和锚点
+  cleanUrl = cleanUrl.split('?')[0].split('#')[0]
+
+  // 如果有父级，获取父级的 code 作为前缀
+  let code = ''
+  if (editFormData.parentId) {
+    const parent = navigationTree.value.find(nav => nav.id === editFormData.parentId)
+    if (parent && parent.code) {
+      code = parent.code + '_'
+    }
+  }
+
+  // 将 URL 转换为 code
+  const urlCode = cleanUrl
+    .toLowerCase()
+    .replace(/-/g, '_')
+    .replace(/\//g, '_')
+    .replace(/[^a-z0-9_]/g, '')
+
+  code += urlCode
+
+  editFormData.code = code
+}
+
+/**
+ * 当 URL 失去焦点时，自动生成 code（新增表单）
+ */
+const handleUrlBlur = () => {
+  // 格式化 URL（保持原有逻辑）
+  formatAddUrl()
+
+  // 如果 code 为空，自动生成
+  if (!addFormData.code || addFormData.code.trim() === '') {
+    generateCodeFromUrl()
+  }
+}
+
+/**
+ * 当 URL 失去焦点时（修改表单）
+ */
+const handleEditUrlBlur = () => {
+  // 格式化 URL
+  formatEditUrl()
+
+  // 注意：修改表单不自动生成 code，避免覆盖已有的 code
+  // 如果需要重新生成，用户可以点击"重新生成"按钮
+}
+
+/**
+ * 旧的根据名称生成 code 的函数（保留但不再使用）
+ */
+const generateCodeFromName = (name, parentId = null) => {
+  // 这个函数保留，但不再主动调用
+  // 如果需要可以手动调用
+  return ''
+}
+
+/**
+ * 手动重新生成 code（根据 URL）
+ */
+const generateCode = () => {
+  generateCodeFromUrl()
+}
+
+/**
+ * 当栏目名称失去焦点时（移除自动生成逻辑）
+ */
+const handleNameBlur = () => {
+  // 不再根据名称生成 code
+}
+
 // 重置新增表单数据
 const resetAddForm = () => {
   addFormData.name = ''
+  addFormData.code = ''
   addFormData.url = ''
   addFormData.parentId = null
   addFormData.sortOrder = getNextSortOrder(null)
@@ -733,11 +916,16 @@ onMounted(() => {
 
 <style scoped>
 .navigation-management {
-  padding: 20px;
+  padding: 24px;
+  min-height: calc(100vh - 100px);
+  background-color: #f5f7fa;
 }
 
 .main-card {
-  min-height: 500px;
+  max-width: 1400px;
+  margin: 0 auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 
 .form-tip {
@@ -753,13 +941,81 @@ onMounted(() => {
   margin-top: 2px;
 }
 
-/* 移除表格外边框 */
+/* Tab 优化样式 */
+:deep(.el-card__body) {
+  padding: 20px;
+}
+
+:deep(.el-tabs__header) {
+  margin-bottom: 0;
+  border-bottom: 2px solid #e4e7ed;
+}
+
+:deep(.el-tabs__item) {
+  font-size: 16px;
+  font-weight: 500;
+  padding: 0 24px;
+  height: 48px;
+  line-height: 48px;
+  color: #606266;
+  transition: all 0.3s;
+}
+
+:deep(.el-tabs__item:hover) {
+  color: #409eff;
+}
+
+:deep(.el-tabs__item.is-active) {
+  color: #409eff;
+  font-weight: 600;
+}
+
+:deep(.el-tabs__active-bar) {
+  height: 3px;
+  background-color: #409eff;
+}
+
+:deep(.el-tabs__content) {
+  padding: 24px 20px;
+}
+
+/* 表格优化样式 */
 :deep(.el-table) {
   border: none !important;
+  font-size: 14px;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 :deep(.el-table::before) {
   display: none;
+}
+
+:deep(.el-table th.el-table__cell) {
+  background-color: #f5f7fa;
+  color: #606266;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 14px 0;
+}
+
+:deep(.el-table td.el-table__cell) {
+  padding: 16px 0;
+}
+
+:deep(.el-table .cell) {
+  padding: 0 12px;
+  line-height: 1.6;
+}
+
+:deep(.el-table--border) {
+  border: 1px solid #ebeef5;
+}
+
+:deep(.el-tag) {
+  border-radius: 4px;
+  padding: 0 12px;
+  font-weight: 500;
 }
 
 /* 将展开箭头从第一列(ID)移动到第二列(导航名称) */
@@ -833,9 +1089,19 @@ onMounted(() => {
   margin-left: 16px;
 }
 
-/* 标签页样式 */
-:deep(.el-tabs__content) {
-  padding: 10px 0;
+/* 表单优化样式 */
+:deep(.el-form) {
+  padding-top: 10px;
+}
+
+:deep(.el-form-item__label) {
+  font-weight: 500;
+  color: #606266;
+}
+
+:deep(.el-button) {
+  border-radius: 4px;
+  font-weight: 500;
 }
 
 /* 子导航选项样式 - 右对齐缩进 */

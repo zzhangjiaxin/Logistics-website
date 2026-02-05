@@ -118,10 +118,22 @@ const siteSubtitle = computed(() => {
 // 获取启用的导航列表（树形结构）
 const fetchNavigationList = async () => {
   try {
+    console.log('[导航] 开始获取导航列表...')
     const res = await getEnabledNavigationTree()
+    console.log('[导航] API 响应:', res)
     navigationList.value = res.data || []
+    console.log('[导航] 导航列表已更新:', navigationList.value)
+
+    // 检查每个导航项的子菜单
+    navigationList.value.forEach(nav => {
+      if (nav.children && nav.children.length > 0) {
+        console.log(`[导航] "${nav.name}" 有 ${nav.children.length} 个子菜单:`, nav.children.map(c => c.name))
+      } else {
+        console.log(`[导航] "${nav.name}" 没有子菜单`)
+      }
+    })
   } catch (error) {
-    console.error('获取导航列表失败:', error)
+    console.error('[导航] 获取导航列表失败:', error)
     // 如果获取失败，使用默认导航（与原硬编码导航栏一致）
     navigationList.value = [
       { id: 1, name: '首页', url: '/', isHome: 1, isEnabled: 1, target: '_self', sortOrder: 1 },
@@ -132,6 +144,7 @@ const fetchNavigationList = async () => {
       { id: 6, name: '帮助中心', url: '/help', isHome: 0, isEnabled: 1, target: '_self', sortOrder: 6 },
       { id: 7, name: '联系我们', url: '/contact', isHome: 0, isEnabled: 1, target: '_self', sortOrder: 7 }
     ]
+    console.log('[导航] 使用默认导航列表')
   }
 }
 

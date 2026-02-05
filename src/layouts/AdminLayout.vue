@@ -17,19 +17,29 @@
         <el-sub-menu index="basic-info">
           <template #title>
             <el-icon><Tools /></el-icon>
-            <span>基本信息</span>
+            <span>基础内容</span>
           </template>
           <el-menu-item index="/admin/site-info" @dblclick="handleMenuDblClick('/admin/site-info')">
             <el-icon><Setting /></el-icon>
-            <span>站点信息</span>
+            <span>站点管理</span>
           </el-menu-item>
           <el-menu-item index="/admin/navigation" @dblclick="handleMenuDblClick('/admin/navigation')">
             <el-icon><Menu /></el-icon>
-            <span>导航栏目</span>
+            <span>栏目管理</span>
           </el-menu-item>
           <el-menu-item index="/admin/carousel" @dblclick="handleMenuDblClick('/admin/carousel')">
             <el-icon><Picture /></el-icon>
-            <span>轮播图管理</span>
+            <span>图片管理</span>
+          </el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu index="settings">
+          <template #title>
+            <el-icon><Setting /></el-icon>
+            <span>设置</span>
+          </template>
+          <el-menu-item index="/admin/system-settings" @dblclick="handleMenuDblClick('/admin/system-settings')">
+            <el-icon><Tools /></el-icon>
+            <span>系统设置</span>
           </el-menu-item>
         </el-sub-menu>
         <!-- 后续可以添加更多菜单项 -->
@@ -104,9 +114,10 @@ const openedTabs = ref([])
 
 // 页面标题映射
 const pageTitles = {
-  '/admin/site-info': '站点信息',
-  '/admin/navigation': '导航栏管理',
-  '/admin/carousel': '轮播图管理'
+  '/admin/site-info': '站点管理',
+  '/admin/navigation': '栏目管理',
+  '/admin/carousel': '图片管理',
+  '/admin/system-settings': '系统设置'
 }
 
 // 当前激活的菜单项
@@ -114,9 +125,13 @@ const activeMenu = computed(() => route.path)
 
 // 根据当前路由决定是否展开子菜单
 const defaultOpeneds = computed(() => {
-  // 如果当前路由在"基本信息"子菜单下，则展开该子菜单
+  // 如果当前路由在"基础内容"子菜单下，则展开该子菜单
   if (route.path === '/admin/site-info' || route.path === '/admin/navigation' || route.path === '/admin/carousel') {
     return ['basic-info']
+  }
+  // 如果当前路由在"设置"子菜单下，则展开该子菜单
+  if (route.path === '/admin/system-settings') {
+    return ['settings']
   }
   return []
 })
