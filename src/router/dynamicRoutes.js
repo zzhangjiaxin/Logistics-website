@@ -155,13 +155,14 @@ export function generateRoutes(navigations) {
           component: routeConfig.component,
           meta: {
             ...routeConfig.meta,
+            title: nav.name, // 使用导航 API 返回的名称，而非硬编码
             navigationId: nav.id,
             navigationCode: nav.code
           }
         })
 
         registeredPaths.add(basePath)
-        console.log(`[动态路由] 注册父级路由: ${basePath} -> ${routeConfig.name}`)
+        console.log(`[动态路由] 注册父级路由: ${basePath} -> ${routeConfig.name} (title: ${nav.name})`)
       }
     }
 
@@ -180,13 +181,14 @@ export function generateRoutes(navigations) {
               component: childRouteConfig.component,
               meta: {
                 ...childRouteConfig.meta,
+                title: child.name, // 使用导航 API 返回的名称
                 navigationId: child.id,
                 navigationCode: child.code
               }
             })
 
             registeredPaths.add(childBasePath)
-            console.log(`[动态路由] 注册子菜单路由: ${childBasePath} -> ${childRouteConfig.name}`)
+            console.log(`[动态路由] 注册子菜单路由: ${childBasePath} -> ${childRouteConfig.name} (title: ${child.name})`)
           }
         }
         // 如果子菜单没有 code，但父级有 code，则子菜单共享父级的组件
@@ -203,6 +205,7 @@ export function generateRoutes(navigations) {
               component: parentRouteConfig.component,
               meta: {
                 ...parentRouteConfig.meta,
+                title: child.name, // 使用导航 API 返回的名称
                 navigationId: child.id,
                 parentNavigationId: nav.id,
                 isChildRoute: true
@@ -210,7 +213,7 @@ export function generateRoutes(navigations) {
             })
 
             registeredPaths.add(childBasePath)
-            console.log(`[动态路由] 注册子菜单路由（共享父级组件）: ${childBasePath} -> ${parentRouteConfig.name}`)
+            console.log(`[动态路由] 注册子菜单路由（共享父级组件）: ${childBasePath} -> ${parentRouteConfig.name} (title: ${child.name})`)
           }
         }
       })

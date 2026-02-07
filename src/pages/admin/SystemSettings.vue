@@ -9,40 +9,32 @@
               :data="companyList"
               border
               stripe
+              v-loading="loading"
               style="width: 100%"
               empty-text="暂无公司数据"
               :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: '600' }"
             >
               <el-table-column prop="id" label="ID" width="80" align="center" />
-              <el-table-column prop="companyName" label="公司名称" min-width="180" />
-              <el-table-column prop="companyId" label="公司ID" width="150" align="center" />
-              <el-table-column prop="subdomain" label="登录域名" min-width="280">
+              <el-table-column prop="name" label="公司名称" min-width="180" />
+              <el-table-column prop="id" label="公司ID" width="100" align="center" />
+              <el-table-column prop="slug" label="登录域名" min-width="280">
                 <template #default="scope">
                   <div class="domain-display">
                     <span class="domain-text">https://</span>
-                    <span class="domain-highlight">{{ scope.row.subdomain }}</span>
+                    <span class="domain-highlight">{{ scope.row.slug }}</span>
                     <span class="domain-text">.intelink.net.cn</span>
                   </div>
                 </template>
               </el-table-column>
               <el-table-column prop="status" label="状态" width="100" align="center">
                 <template #default="scope">
-                  <el-tag :type="scope.row.status === '启用' ? 'success' : 'info'" size="small">
-                    {{ scope.row.status }}
+                  <el-tag :type="scope.row.status === 'active' ? 'success' : 'info'" size="small">
+                    {{ scope.row.status === 'active' ? '启用' : '禁用' }}
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column prop="createTime" label="创建时间" width="180" align="center" />
+              <el-table-column prop="createdAt" label="创建时间" width="180" align="center" />
             </el-table>
-
-            <div class="table-footer">
-              <el-alert
-                title="公司信息管理功能正在开发中，暂不可用"
-                type="info"
-                :closable="false"
-                show-icon
-              />
-            </div>
           </div>
         </el-tab-pane>
       </el-tabs>
@@ -53,37 +45,37 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElNotification } from 'element-plus'
+import { getTenantInfo } from '@/api/tenant'
 
 // 当前激活的 Tab
 const activeTab = ref('company')
 
-// 公司列表数据（示例数据）
-const companyList = ref([
-  {
-    id: 1,
-    companyId: 'COMP001',
-    companyName: '示例公司A',
-    subdomain: 'kld',
-    status: '启用',
-    createTime: '2024-01-01 10:00:00'
-  },
-  // {
-  //   id: 2,
-  //   companyId: 'COMP002',
-  //   companyName: '示例公司B',
-  //   subdomain: 'company-b',
-  //   status: '禁用',
-  //   createTime: '2024-01-02 11:00:00'
-  // }
-])
+// 加载状态
+const loading = ref(false)
 
-// 页面加载时从后台获取公司列表
-onMounted(() => {
-  // TODO: 调用后台 API 获取公司列表
-  // const data = await api.getCompanyList()
-  // companyList.value = data
+// 公司列表数据
+const companyList = ref([])
 
-  console.log('公司列表加载完成')
+// 页面加载时从后台获取租户信息
+onMounted(async () => {
+  loading.value = true
+  try {
+    const res = await getTenantInfo()
+    if (res.data) {
+      // 将当前租户信息放入列表
+      companyList.value = [res.data]
+    }
+  } catch (error) {
+    console.error('获取租户信息失败:', error)
+    ElNotification({
+      title: '错误',
+      message: '获取租户信息失败',
+      type: 'error',
+      duration: 3000
+    })
+  } finally {
+    loading.value = false
+  }
 })
 </script>
 
@@ -132,10 +124,6 @@ onMounted(() => {
   border-radius: 4px;
   margin: 0 2px;
   border: 1px solid #d9ecff;
-}
-
-.table-footer {
-  margin-top: 20px;
 }
 
 :deep(.el-card__body) {

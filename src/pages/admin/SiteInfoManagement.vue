@@ -13,7 +13,7 @@
           >
             <!-- 站点标题 -->
             <el-form-item label="站点标题" prop="siteTitle">
-              <el-input v-model="formData.siteTitle" placeholder="请输入站点标题" maxlength="200" show-word-limit />
+              <el-input v-model="formData.siteTitle" placeholder="请输入站点标题" maxlength="100" show-word-limit />
             </el-form-item>
 
             <!-- 站点副标题 -->
@@ -21,9 +21,10 @@
               <el-input v-model="formData.siteSubtitle" placeholder="请输入站点副标题" maxlength="200" show-word-limit />
             </el-form-item>
 
-            <!-- 站点域名 -->
-            <el-form-item label="站点域名" prop="siteDomain">
-              <el-input v-model="formData.siteDomain" placeholder="请输入站点域名" maxlength="255" />
+            <!-- 站点域名（来自租户信息，只读） -->
+            <el-form-item label="站点域名">
+              <el-input v-model="formData.siteDomain" disabled />
+              <div class="form-tip">不可编辑</div>
             </el-form-item>
 
             <!-- 站点LOGO -->
@@ -338,6 +339,10 @@ import { getSiteInfo, saveSiteInfo } from '@/api/siteInfo'
 import { getHomeAboutInfo, saveHomeAboutInfo } from '@/api/homeAbout'
 import { uploadImage } from '@/api/upload'
 import { BASE_URL } from '@/utils/request'
+import { useSiteStore } from '@/stores'
+import { notifyDataChange } from '@/utils/crossTabSync'
+
+const siteStore = useSiteStore()
 
 const activeTab = ref('list')
 const formRef = ref(null)
@@ -356,6 +361,7 @@ const formData = reactive({
   siteTitle: '',
   siteSubtitle: '',
   siteDomain: '',
+  slug: '',
   siteLogo: '',
   footerLogo: '',
   siteIcp: '',
@@ -380,9 +386,7 @@ const originalData = ref({})
 const originalAboutData = ref({})
 
 // 表单验证规则
-const formRules = {
-  siteTitle: [{ required: true, message: '请输入站点标题', trigger: 'blur' }]
-}
+const formRules = {}
 
 // 获取完整图片URL
 const getImageUrl = (path) => {
@@ -744,7 +748,9 @@ const handleSubmit = async () => {
 
     submitting.value = true
     try {
-      await saveSiteInfo(formData)
+      // 排除只读字段，其余全部提交（siteTitle 由后端写入 tenant.name）
+      const { siteDomain, slug, ...submitData } = formData
+      await saveSiteInfo(submitData)
       ElNotification({
         title: '成功',
         message: '保存成功',
@@ -753,6 +759,10 @@ const handleSubmit = async () => {
       })
       // 更新原始数据
       originalData.value = { ...formData }
+      // 同步刷新前端展示页的站点信息缓存
+      siteStore.fetchSiteInfo()
+      // 通知其他标签页数据已更新
+      notifyDataChange('site-info')
     } catch (error) {
       ElNotification({
         title: '错误',
@@ -801,6 +811,10 @@ const handleAboutSubmit = async () => {
     })
     // 更新原始数据
     originalAboutData.value = JSON.parse(JSON.stringify(aboutFormData))
+    // 同步刷新前端展示页的站点信息缓存
+    siteStore.fetchSiteInfo()
+    // 通知其他标签页数据已更新
+    notifyDataChange('home-about')
   } catch (error) {
     ElNotification({
       title: '错误',

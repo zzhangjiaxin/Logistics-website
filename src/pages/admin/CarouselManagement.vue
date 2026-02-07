@@ -43,15 +43,6 @@
                 {{ (currentPage - 1) * pageSize + $index + 1 }}
               </template>
             </el-table-column>
-            <el-table-column prop="title" label="标题" min-width="200" />
-            <el-table-column prop="groupName" label="分组" width="150" sortable :sort-method="sortByGroup" :sort-orders="['ascending', 'descending']">
-              <template #default="{ row }">
-                <el-tag :style="getGroupTagStyle(row.groupName)" size="small">
-                  {{ getGroupLabel(row.groupName) }}
-                  <span v-if="isGroupDisabled(row.groupName)" style="margin-left: 4px; color: #F56C6C;">禁</span>
-                </el-tag>
-              </template>
-            </el-table-column>
             <el-table-column label="图片预览" width="150">
               <template #default="{ row }">
                 <el-image
@@ -64,9 +55,18 @@
                 />
               </template>
             </el-table-column>
+            <el-table-column prop="title" label="描述" min-width="200" />
             <el-table-column prop="linkUrl" label="链接地址" min-width="200">
               <template #default="{ row }">
                 {{ row.linkUrl || '无' }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="groupName" label="分组" width="150" sortable :sort-method="sortByGroup" :sort-orders="['ascending', 'descending']">
+              <template #default="{ row }">
+                <el-tag :style="getGroupTagStyle(row.groupName)" size="small">
+                  {{ getGroupLabel(row.groupName) }}
+                  <span v-if="isGroupDisabled(row.groupName)" style="margin-left: 4px; color: #F56C6C;">禁</span>
+                </el-tag>
               </template>
             </el-table-column>
             <el-table-column label="状态" width="120">
@@ -165,6 +165,16 @@
               </div>
             </el-form-item>
 
+            <el-form-item label="主标题" prop="mainTitle" v-if="addFormNeedsTitles">
+              <el-input v-model="addFormData.mainTitle" placeholder="请输入背景图主标题（如：新闻中心）" />
+              <div class="form-tip">显示在背景图上方的大标题</div>
+            </el-form-item>
+
+            <el-form-item label="副标题" prop="subTitle" v-if="addFormNeedsTitles">
+              <el-input v-model="addFormData.subTitle" placeholder="请输入背景图副标题（如：消息灵通，保持领先）" />
+              <div class="form-tip">显示在主标题下方的小标题</div>
+            </el-form-item>
+
             <el-form-item label="链接地址" prop="linkUrl">
               <el-input v-model="addFormData.linkUrl" placeholder="请输入点击跳转的链接地址（可选）" />
               <div class="form-tip">留空则不跳转，示例：/business 或 https://example.com</div>
@@ -195,12 +205,12 @@
               </el-radio-group>
             </el-form-item>
 
-            <el-form-item label="描述" prop="description">
+            <el-form-item label="备注" prop="description">
               <el-input
                 v-model="addFormData.description"
                 type="textarea"
                 :rows="3"
-                placeholder="请输入轮播图描述（可选）"
+                placeholder="请输入备注（可选）"
               />
             </el-form-item>
 
@@ -285,6 +295,16 @@
               </div>
             </el-form-item>
 
+            <el-form-item label="主标题" prop="mainTitle" v-if="editFormData.groupName !== 'home'">
+              <el-input v-model="editFormData.mainTitle" placeholder="请输入背景图主标题（如：新闻中心）" />
+              <div class="form-tip">显示在背景图上方的大标题</div>
+            </el-form-item>
+
+            <el-form-item label="副标题" prop="subTitle" v-if="editFormData.groupName !== 'home'">
+              <el-input v-model="editFormData.subTitle" placeholder="请输入背景图副标题（如：消息灵通，保持领先）" />
+              <div class="form-tip">显示在主标题下方的小标题</div>
+            </el-form-item>
+
             <el-form-item label="链接地址" prop="linkUrl">
               <el-input v-model="editFormData.linkUrl" placeholder="请输入点击跳转的链接地址（可选）" />
               <div class="form-tip">留空则不跳转，示例：/business 或 https://example.com</div>
@@ -314,12 +334,12 @@
               </el-radio-group>
             </el-form-item>
 
-            <el-form-item label="描述" prop="description">
+            <el-form-item label="备注" prop="description">
               <el-input
                 v-model="editFormData.description"
                 type="textarea"
                 :rows="3"
-                placeholder="请输入描述（可选）"
+                placeholder="请输入备注（可选）"
               />
             </el-form-item>
 
@@ -518,6 +538,7 @@ import {
 } from '@/api/carouselGroup'
 import { getNavigationTree } from '@/api/navigation'
 import { BASE_URL } from '@/utils/request'
+import { notifyDataChange } from '@/utils/crossTabSync'
 
 const activeTab = ref('list')
 const loading = ref(false)
@@ -564,7 +585,9 @@ const addFormData = reactive({
   sortOrder: null,
   isEnabled: 1,
   target: '_self',
-  description: ''
+  description: '',
+  mainTitle: '',
+  subTitle: ''
 })
 
 // 修改表单数据
@@ -577,7 +600,9 @@ const editFormData = reactive({
   sortOrder: null,
   isEnabled: 1,
   target: '_self',
-  description: ''
+  description: '',
+  mainTitle: '',
+  subTitle: ''
 })
 
 const formRules = {
@@ -846,6 +871,14 @@ const handleCurrentChange = (val) => {
   currentPage.value = val
 }
 
+// 新增时：判断当前选中的非home分组下是否还没有轮播图（需要填写主标题/副标题）
+const addFormNeedsTitles = computed(() => {
+  const group = addFormData.groupName
+  if (!group || group === 'home') return false
+  // 该分组下没有任何轮播图数据，才需要填写主标题/副标题
+  return !carouselList.value.some(item => item.groupName === group)
+})
+
 // 编辑表单的分组筛选列表
 const filteredEditCarouselList = computed(() => {
   if (!editFormData.groupName) {
@@ -887,6 +920,8 @@ const handleEditGroupChange = () => {
   editFormData.isEnabled = 1
   editFormData.target = '_self'
   editFormData.description = ''
+  editFormData.mainTitle = ''
+  editFormData.subTitle = ''
 }
 
 // 计算下一个排序值
@@ -910,6 +945,8 @@ const handleEditCarouselChange = (carouselId) => {
     editFormData.isEnabled = carousel.isEnabled
     editFormData.target = carousel.target
     editFormData.description = carousel.description
+    editFormData.mainTitle = carousel.mainTitle || ''
+    editFormData.subTitle = carousel.subTitle || ''
   }
 }
 
@@ -926,8 +963,10 @@ const handleEdit = (row) => {
     linkUrl: row.linkUrl,
     sortOrder: row.sortOrder,
     isEnabled: row.isEnabled,
-    target: row.target,
-    description: row.description
+    target: row.target || '_self',
+    description: row.description,
+    mainTitle: row.mainTitle || '',
+    subTitle: row.subTitle || ''
   })
 
   showEditTab.value = true
@@ -950,6 +989,7 @@ const handleDelete = async (row) => {
       type: 'success',
       duration: 3000
     })
+    notifyDataChange('carousel')
     fetchCarouselList()
   } catch (error) {
     if (error !== 'cancel') {
@@ -976,7 +1016,9 @@ const handleStatusChange = async (row) => {
       sortOrder: row.sortOrder,
       isEnabled: row.isEnabled,
       target: row.target,
-      description: row.description
+      description: row.description,
+      mainTitle: row.mainTitle,
+      subTitle: row.subTitle
     })
     ElNotification({
       title: '成功',
@@ -984,6 +1026,7 @@ const handleStatusChange = async (row) => {
       type: 'success',
       duration: 3000
     })
+    notifyDataChange('carousel')
     fetchCarouselList()
   } catch (error) {
     ElNotification({
@@ -1012,6 +1055,7 @@ const handleAddSubmit = async () => {
         type: 'success',
         duration: 3000
       })
+      notifyDataChange('carousel')
       resetAddForm()
       fetchCarouselList()
       activeTab.value = 'list'
@@ -1044,6 +1088,7 @@ const handleEditSubmit = async () => {
         type: 'success',
         duration: 3000
       })
+      notifyDataChange('carousel')
 
       await fetchCarouselList()
 
@@ -1094,6 +1139,8 @@ const resetAddForm = () => {
   addFormData.isEnabled = 1
   addFormData.target = '_self'
   addFormData.description = ''
+  addFormData.mainTitle = ''
+  addFormData.subTitle = ''
   addFormRef.value?.clearValidate()
 }
 
@@ -1226,6 +1273,7 @@ const handleDeleteGroup = async (row) => {
       type: 'success',
       duration: 3000
     })
+    notifyDataChange('carousel')
     await fetchGroupList()
   } catch (error) {
     if (error !== 'cancel') {
@@ -1266,6 +1314,7 @@ const handleGroupStatusChange = async (row) => {
       type: 'success',
       duration: 3000
     })
+    notifyDataChange('carousel')
     await fetchGroupList()
 
     // 如果当前筛选的分组被启用，需要检查筛选状态
@@ -1317,6 +1366,7 @@ const confirmDisableGroup = async () => {
     }
 
     // 3. 刷新数据
+    notifyDataChange('carousel')
     await fetchGroupList()
     await fetchCarouselList()
 
@@ -1453,6 +1503,7 @@ const handleGroupSubmit = async () => {
       }
 
       showAddGroupForm.value = false
+      notifyDataChange('carousel')
       await fetchGroupList()
       // 刷新轮播图列表，以便更新分组显示
       await fetchCarouselList()
@@ -1733,6 +1784,10 @@ onMounted(() => {
 :deep(.el-button) {
   border-radius: 4px;
   font-weight: 500;
+}
+
+:deep(.el-button.is-circle) {
+  border-radius: 50%;
 }
 
 /* 分页优化样式 */

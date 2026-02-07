@@ -3,27 +3,17 @@
     <div class="wrap">
       <div class="logo">
         <router-link to="/">
-          <img :src="footerLogoUrl" alt="翔宇达">
+          <img :src="footerLogoUrl" alt="">
         </router-link>
       </div>
       <ul class="fnav">
-        <li>
-          <h3>主营渠道</h3>
-          <p><router-link to="/business-1">空派专线</router-link></p>
-          <p><router-link to="/business-2">海派专线</router-link></p>
-          <p><router-link to="/business-3">陆运专线</router-link></p>
-        </li>
-        <li>
-          <h3>新闻中心</h3>
-          <p><router-link to="/news-1">公司新闻</router-link></p>
-          <p><router-link to="/news-2">行业动态</router-link></p>
-        </li>
-        <li>
-          <h3>关于我们</h3>
-          <p><router-link to="/aboutus#dw1">公司简介</router-link></p>
-          <p><router-link to="/aboutus#dw2">企业理念</router-link></p>
-          <p><router-link to="/aboutus#dw3">发展历程</router-link></p>
-          <p><router-link to="/aboutus#dw4">荣誉资质</router-link></p>
+        <li v-for="nav in footerNavs" :key="nav.id">
+          <h3>{{ nav.name }}</h3>
+          <template v-if="nav.children && nav.children.length > 0">
+            <p v-for="child in nav.children" :key="child.id">
+              <router-link :to="child.url" :target="child.target">{{ child.name }}</router-link>
+            </p>
+          </template>
         </li>
         <li>
           <h3>联系我们</h3>
@@ -52,11 +42,15 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useSiteStore } from '@/stores'
 import { BASE_URL } from '@/utils/request'
+import { getEnabledNavigationTree } from '@/api/navigation'
 
 const siteStore = useSiteStore()
+
+// 导航列表（只取有子菜单的导航项用于页脚展示，排除首页、帮助中心、联系我们等无子菜单项）
+const footerNavs = ref([])
 
 // 获取完整的图片 URL
 const getFullImageUrl = (imageUrl) => {
@@ -82,5 +76,46 @@ const footerInfoHtml = computed(() => {
   }
 
   return html
+})
+
+// 获取启用的导航列表，筛选有子菜单的项用于页脚
+const fetchFooterNavs = async () => {
+  try {
+    const res = await getEnabledNavigationTree()
+    if (res.data) {
+      // 只取有子菜单的导航项展示在页脚（如主营渠道、新闻中心、关于我们）
+      footerNavs.value = res.data.filter(nav => nav.children && nav.children.length > 0)
+    }
+  } catch (error) {
+    console.error('[页脚] 获取导航列表失败:', error)
+    // 使用默认导航
+    footerNavs.value = [
+      {
+        id: 4, name: '主营渠道', children: [
+          { id: 41, name: '空派专线', url: '/business-1', target: '_self' },
+          { id: 42, name: '海派专线', url: '/business-2', target: '_self' },
+          { id: 43, name: '陆运专线', url: '/business-3', target: '_self' }
+        ]
+      },
+      {
+        id: 5, name: '新闻中心', children: [
+          { id: 51, name: '公司新闻', url: '/news-1', target: '_self' },
+          { id: 52, name: '行业动态', url: '/news-2', target: '_self' }
+        ]
+      },
+      {
+        id: 3, name: '关于我们', children: [
+          { id: 31, name: '公司简介', url: '/aboutus#dw1', target: '_self' },
+          { id: 32, name: '企业理念', url: '/aboutus#dw2', target: '_self' },
+          { id: 33, name: '发展历程', url: '/aboutus#dw3', target: '_self' },
+          { id: 34, name: '荣誉资质', url: '/aboutus#dw4', target: '_self' }
+        ]
+      }
+    ]
+  }
+}
+
+onMounted(() => {
+  fetchFooterNavs()
 })
 </script>

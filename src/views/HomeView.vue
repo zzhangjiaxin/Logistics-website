@@ -212,6 +212,8 @@ import AppFooter from '@/components/layout/AppFooter.vue'
 import { useScrollPosition } from '@/composables/useScrollPosition'
 import { getEnabledNavigationTree } from '@/api/navigation'
 import { getPublicHomeAboutInfo } from '@/api/homeAbout'
+import { getEnabledCarouselByGroup } from '@/api/carousel'
+import { BASE_URL } from '@/utils/request'
 
 // 使用滚动位置保持
 useScrollPosition()
@@ -283,16 +285,16 @@ const handleTrack = () => {
 }
 
 onMounted(() => {
-  // 加载启用的查询类型导航
   loadTrackTypeNavs()
-  // 加载关于我们信息
   loadAboutInfo()
+  loadBannerImages()
 })
 
-// 每次页面激活时重新加载导航配置（解决从后台切换回来时数据不更新的问题）
+// 每次页面激活时重新加载（解决从后台切换回来时数据不更新的问题）
 onActivated(() => {
   loadTrackTypeNavs()
   loadAboutInfo()
+  loadBannerImages()
 })
 
 // 关于我们数据
@@ -327,15 +329,16 @@ const getImageUrl = (path) => {
   if (!path) {
     return ''
   }
-  // 如果是完整的 URL，直接返回
   if (path.startsWith('http://') || path.startsWith('https://')) {
     return path
   }
-  // 如果是相对路径，加上后端 BASE_URL 和 /api 前缀
-  if (path.startsWith('/uploads/')) {
-    return 'http://localhost:8080/api' + path
+  if (path.startsWith('/api')) {
+    path = path.substring(4)
   }
-  return path
+  if (!path.startsWith('/')) {
+    path = '/' + path
+  }
+  return `${BASE_URL}/api${path}`
 }
 
 // 加载关于我们信息
@@ -384,11 +387,25 @@ const useDefaultData = () => {
   console.log('📦 使用默认数据')
 }
 
-// Banner图片
-import banner1 from '@/assets/uploadfiles/20230817-094143.jpg'
-import banner2 from '@/assets/uploadfiles/20230817-094153.jpg'
-import banner3 from '@/assets/uploadfiles/20230817-094205.jpg'
-import banner4 from '@/assets/uploadfiles/20230817-094216.jpg'
+// Banner图片（默认值，API加载成功后会被替换）
+import defaultBanner1 from '@/assets/uploadfiles/20230817-094143.jpg'
+import defaultBanner2 from '@/assets/uploadfiles/20230817-094153.jpg'
+import defaultBanner3 from '@/assets/uploadfiles/20230817-094205.jpg'
+import defaultBanner4 from '@/assets/uploadfiles/20230817-094216.jpg'
+
+// 加载首页轮播图（从后台轮播图管理 home 分组获取）
+const bannerImages = ref([defaultBanner1, defaultBanner2, defaultBanner3, defaultBanner4])
+
+const loadBannerImages = async () => {
+  try {
+    const res = await getEnabledCarouselByGroup('home')
+    if (res.data && res.data.length > 0) {
+      bannerImages.value = res.data.map(item => getImageUrl(item.imageUrl))
+    }
+  } catch (error) {
+    console.error('[首页] 获取轮播图失败:', error)
+  }
+}
 
 // 服务流程图标
 import process1 from '@/assets/uploadfiles/20230704-160655.png'
@@ -420,8 +437,7 @@ import partner10 from '@/assets/uploadfiles/20230712-093938.png'
 import partner11 from '@/assets/uploadfiles/20230712-134601.png'
 import partner12 from '@/assets/uploadfiles/20230712-095118.png'
 
-// 硬编码数据
-const bannerImages = [banner1, banner2, banner3, banner4]
+// 硬编码数据（无后台管理的内容）
 const processItems = [
   { icon: process1, title: '咨询报价' },
   { icon: process2, title: '开户预报' },

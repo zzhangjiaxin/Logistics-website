@@ -177,3 +177,18 @@ export function registerDynamicRoutes(navigations) {
 }
 
 export default router
+
+// 路由后置守卫：动态设置页面标题
+router.afterEach((to) => {
+  const siteStore = useSiteStore()
+  const companyName = siteStore.siteInfo.siteTitle
+
+  if (to.path.startsWith('/admin')) {
+    document.title = to.meta.title || '后台管理'
+  } else if (to.meta.title) {
+    // 如果站点信息已加载，拼接公司名称；否则先只显示页面名称，等 fetchSiteInfo 完成后 updatePageTitle 会补上
+    document.title = companyName ? `${to.meta.title} - ${companyName}` : to.meta.title
+  } else if (to.path === '/') {
+    document.title = companyName || 'Loading...'
+  }
+})

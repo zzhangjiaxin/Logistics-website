@@ -3,8 +3,8 @@
     <!-- Banner -->
     <div id="banners" :style="{ backgroundImage: `url(${bannerBg})` }">
       <div class="flex-column wrap">
-        <h2>关于我们</h2>
-        <p>不负所托，递遍全球</p>
+        <h2>{{ mainTitle }}</h2>
+        <p>{{ subTitle }}</p>
       </div>
     </div>
 
@@ -158,8 +158,16 @@ import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Navigation } from 'swiper/modules'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import { useScrollPosition } from '@/composables/useScrollPosition'
+import { useBannerData } from '@/composables/useBannerData'
+import defaultBannerBg from '@/assets/uploadfiles/20230706-133407.jpg'
 
 useScrollPosition()
+
+const { bannerBg, mainTitle, subTitle } = useBannerData('aboutus', {
+  bannerBg: defaultBannerBg,
+  mainTitle: '关于我们',
+  subTitle: '不负所托，递遍全球'
+})
 
 const modules = [Navigation]
 const mobileNavOpen = ref(false)
@@ -169,9 +177,6 @@ const imgSwiper = ref(null)
 const toggleMobileNav = () => {
   mobileNavOpen.value = !mobileNavOpen.value
 }
-
-// Banner背景
-import bannerBg from '@/assets/uploadfiles/20230706-133407.jpg'
 
 // 荣誉资质图片
 import cert1 from '@/assets/thumbs/20230715-154422.jpg'

@@ -3,8 +3,8 @@
     <!-- Banner -->
     <div id="banners" :style="{ backgroundImage: `url(${bannerBg})` }">
       <div class="flex-column wrap">
-        <h2>帮助中心</h2>
-        <p>始于客户需求，终于客户满意</p>
+        <h2>{{ mainTitle }}</h2>
+        <p>{{ subTitle }}</p>
       </div>
     </div>
 
@@ -92,12 +92,19 @@ import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import { useScrollPosition } from '@/composables/useScrollPosition'
+import { useBannerData } from '@/composables/useBannerData'
 
 useScrollPosition()
 
 const route = useRoute()
 
-import bannerBg from '@/assets/uploadfiles/20230706-142647.jpg'
+import defaultBannerBg from '@/assets/uploadfiles/20230706-142647.jpg'
+
+const { bannerBg, mainTitle, subTitle } = useBannerData('help-search', {
+  bannerBg: defaultBannerBg,
+  mainTitle: '帮助中心',
+  subTitle: '始于客户需求，终于客户满意'
+})
 
 // 搜索关键词（从URL参数获取）
 const searchKeyword = ref(route.query.search_key || '')

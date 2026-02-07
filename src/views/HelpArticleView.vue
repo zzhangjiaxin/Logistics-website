@@ -3,8 +3,8 @@
     <!-- Banner -->
     <div id="banners" :style="{ backgroundImage: `url(${bannerBg})` }">
       <div class="flex-column wrap">
-        <h2>帮助中心</h2>
-        <p>始于客户需求，终于客户满意</p>
+        <h2>{{ mainTitle }}</h2>
+        <p>{{ subTitle }}</p>
       </div>
     </div>
 
@@ -91,13 +91,20 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import { useScrollPosition } from '@/composables/useScrollPosition'
+import { useBannerData } from '@/composables/useBannerData'
 
 const route = useRoute()
 
 // 使用滚动位置管理
 useScrollPosition()
 
-import bannerBg from '@/assets/uploadfiles/20230706-142647.jpg'
+import defaultBannerBg from '@/assets/uploadfiles/20230706-142647.jpg'
+
+const { bannerBg, mainTitle, subTitle } = useBannerData('help-article', {
+  bannerBg: defaultBannerBg,
+  mainTitle: '帮助中心',
+  subTitle: '始于客户需求，终于客户满意'
+})
 
 // 导入图片
 import img_20230805_181622 from '@/assets/uploadfiles_xyd/images/20230805_181622.jpg'

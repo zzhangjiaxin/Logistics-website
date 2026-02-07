@@ -3,8 +3,8 @@
     <!-- Banner -->
     <div id="banners" :style="{ backgroundImage: `url(${bannerBg})` }">
       <div class="flex-column wrap">
-        <h2>新闻中心</h2>
-        <p>消息灵通，保持领先</p>
+        <h2>{{ mainTitle }}</h2>
+        <p>{{ subTitle }}</p>
       </div>
     </div>
 
@@ -193,6 +193,7 @@ import 'swiper/css/pagination'
 import { showMessage } from '@/utils/message'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import { useScrollPosition } from '@/composables/useScrollPosition'
+import { useBannerData } from '@/composables/useBannerData'
 
 const route = useRoute()
 const router = useRouter()
@@ -219,7 +220,14 @@ watch(() => route.path, () => {
   searchKeyword.value = ''
 })
 
-import bannerBg from '@/assets/uploadfiles/20230706-135232.jpg'
+import defaultBannerBg from '@/assets/uploadfiles/20230706-135232.jpg'
+
+const { bannerBg, mainTitle, subTitle } = useBannerData('news', {
+  bannerBg: defaultBannerBg,
+  mainTitle: '新闻中心',
+  subTitle: '消息灵通，保持领先'
+})
+
 import newsImg1 from '@/assets/uploadfiles/20230926-144059.jpg'
 import newsImg2 from '@/assets/uploadfiles/20230719-182116.jpg'
 import newsImg3 from '@/assets/uploadfiles/20230712-103016.jpg'

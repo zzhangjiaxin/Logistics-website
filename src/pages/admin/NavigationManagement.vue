@@ -272,6 +272,7 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { ElNotification, ElMessageBox } from 'element-plus'
 import { ArrowRight } from '@element-plus/icons-vue'
 import { getNavigationTree, getTopLevelNavigation, createNavigation, updateNavigation, deleteNavigation } from '@/api/navigation'
+import { notifyDataChange } from '@/utils/crossTabSync'
 
 const activeTab = ref('list')
 const loading = ref(false)
@@ -525,6 +526,7 @@ const handleDelete = async (row) => {
       type: 'success',
       duration: 3000
     })
+    notifyDataChange('navigation')
     fetchNavigationTree()
     fetchTopLevelList()
   } catch (error) {
@@ -560,6 +562,7 @@ const handleStatusChange = async (row) => {
       type: 'success',
       duration: 3000
     })
+    notifyDataChange('navigation')
     fetchNavigationTree()
   } catch (error) {
     ElNotification({
@@ -598,6 +601,7 @@ const handleAddSubmit = async () => {
         type: 'success',
         duration: 3000
       })
+      notifyDataChange('navigation')
       resetAddForm()
       fetchNavigationTree()
       fetchTopLevelList()
@@ -656,6 +660,7 @@ const handleEditSubmit = async () => {
         type: 'success',
         duration: 3000
       })
+      notifyDataChange('navigation')
 
       // 保存父级ID用于恢复展开状态
       const parentIdToRestore = editingParentId.value

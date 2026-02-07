@@ -63,6 +63,16 @@ export function deleteCarousel(id) {
 }
 
 /**
+ * 根据分组获取启用的轮播图列表（前端展示用）
+ */
+export function getEnabledCarouselByGroup(groupName) {
+  return request({
+    url: `/tenant/carousel/group/${groupName}/enabled`,
+    method: 'get'
+  })
+}
+
+/**
  * 批量更新排序
  */
 export function updateCarouselSort(ids) {

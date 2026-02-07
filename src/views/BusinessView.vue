@@ -3,8 +3,8 @@
     <!-- Banner -->
     <div id="banners" :style="{ backgroundImage: `url(${bannerBg})` }">
       <div class="flex-column wrap">
-        <h2>主营渠道</h2>
-        <p>专业物流，全球配送</p>
+        <h2>{{ mainTitle }}</h2>
+        <p>{{ subTitle }}</p>
       </div>
     </div>
 
@@ -65,8 +65,14 @@
 <script setup>
 import AppFooter from '@/components/layout/AppFooter.vue'
 import { useScrollPosition } from '@/composables/useScrollPosition'
+import { useBannerData } from '@/composables/useBannerData'
+import defaultBannerBg from '@/assets/uploadfiles/20230707-131606.jpg'
 
 useScrollPosition()
 
-import bannerBg from '@/assets/uploadfiles/20230707-131606.jpg'
+const { bannerBg, mainTitle, subTitle } = useBannerData('business', {
+  bannerBg: defaultBannerBg,
+  mainTitle: '主营渠道',
+  subTitle: '专业物流，全球配送'
+})
 </script>

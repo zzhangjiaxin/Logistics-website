@@ -1,7 +1,12 @@
 <template>
   <div>
-    <!-- Banner 区域 - 使用空白区域 -->
-    <div id="bmar"></div>
+    <!-- Banner（背景图和副标题共用父级菜单，主标题跟随子菜单动态变化） -->
+    <div id="banners" :style="{ backgroundImage: `url(${bannerBg})` }">
+      <div class="flex-column wrap">
+        <h2>{{ breadcrumbText }}</h2>
+        <p>{{ subTitle }}</p>
+      </div>
+    </div>
 
     <!-- 面包屑导航 -->
     <div id="bnav">
@@ -126,15 +131,24 @@ import { ref, computed, onMounted, onActivated, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showMessage } from '@/utils/message'
 import AppFooter from '@/components/layout/AppFooter.vue'
+import { useBannerData } from '@/composables/useBannerData'
 import { useScrollPosition } from '@/composables/useScrollPosition'
 import { useTrackStore } from '@/stores'
 import { getEnabledNavigationTree } from '@/api/navigation'
+import defaultBannerBg from '@/assets/uploadfiles/20230706-142647.jpg'
 
 useScrollPosition()
 
 const route = useRoute()
 const router = useRouter()
 const trackStore = useTrackStore()
+
+// 加载父级菜单"信息查询"的 Banner（背景图、副标题），子菜单共用；主标题跟随子菜单动态变化
+const { bannerBg, subTitle } = useBannerData('track', {
+  bannerBg: defaultBannerBg,
+  mainTitle: '信息查询',
+  subTitle: '实时追踪您的货物动态'
+})
 
 // 查询类型子导航列表（从"信息查询"的子导航获取）
 const trackTypeNavs = ref([])
@@ -204,8 +218,6 @@ const switchTab = (tab) => {
     weight: false
   }
 }
-
-// 运单查询页面不使用 Banner 图片，使用空白区域
 
 // 使用 Pinia store 中的状态
 const trackNumber = computed({
