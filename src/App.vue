@@ -25,13 +25,14 @@ import { useRoute, useRouter } from 'vue-router'
 import AppHeader from './components/layout/AppHeader.vue'
 import MobileMenu from './components/layout/MobileMenu.vue'
 import FloatTools from './components/layout/FloatTools.vue'
-import { useUIStore, useSiteStore } from '@/stores'
+import { useUIStore, useSiteStore, useCompanyInfoStore } from '@/stores'
 import { onDataChange } from '@/utils/crossTabSync'
 
 const route = useRoute()
 const router = useRouter()
 const uiStore = useUIStore()
 const siteStore = useSiteStore()
+const companyInfoStore = useCompanyInfoStore()
 
 // 注入 router 实例到 siteStore，供 updatePageTitle 使用（避免循环依赖）
 siteStore.setRouter(router)
@@ -59,6 +60,7 @@ watch(isAdminRoute, (isAdmin, wasAdmin) => {
   if (wasAdmin && !isAdmin) {
     invalidateCache()
     siteStore.fetchSiteInfo()
+    companyInfoStore.fetchCompanyInfo()
   }
 })
 
@@ -88,6 +90,10 @@ const handleCrossTabUpdate = (payload) => {
       // 首页关于我们更新：清空缓存让页面重新挂载
       invalidateCache()
       break
+    case 'company-info':
+      // 公司联系信息更新：刷新全局 store
+      companyInfoStore.fetchCompanyInfo()
+      break
   }
 }
 
@@ -99,6 +105,8 @@ const handleScroll = () => {
 onMounted(() => {
   // 初始化加载站点信息
   siteStore.fetchSiteInfo()
+  // 初始化加载公司联系信息
+  companyInfoStore.fetchCompanyInfo()
 
   window.addEventListener('scroll', handleScroll, { passive: true })
   handleScroll()

@@ -14,6 +14,10 @@
         active-text-color="#409EFF"
         @select="handleMenuSelect"
       >
+        <el-menu-item index="/admin" @dblclick="handleMenuDblClick('/admin')">
+          <el-icon><DataAnalysis /></el-icon>
+          <span>仪表盘</span>
+        </el-menu-item>
         <el-sub-menu index="basic-info">
           <template #title>
             <el-icon><Tools /></el-icon>
@@ -23,13 +27,41 @@
             <el-icon><Setting /></el-icon>
             <span>站点管理</span>
           </el-menu-item>
+          <el-menu-item index="/admin/company-info" @dblclick="handleMenuDblClick('/admin/company-info')">
+            <el-icon><Phone /></el-icon>
+            <span>公司信息</span>
+          </el-menu-item>
           <el-menu-item index="/admin/navigation" @dblclick="handleMenuDblClick('/admin/navigation')">
             <el-icon><Menu /></el-icon>
             <span>栏目管理</span>
           </el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu index="article-content">
+          <template #title>
+            <el-icon><Document /></el-icon>
+            <span>文章内容</span>
+          </template>
+          <el-menu-item index="/admin/news" @dblclick="handleMenuDblClick('/admin/news')">
+            <el-icon><DocumentCopy /></el-icon>
+            <span>新闻管理</span>
+          </el-menu-item>
+          <el-menu-item index="/admin/faq" @dblclick="handleMenuDblClick('/admin/faq')">
+            <el-icon><DocumentCopy /></el-icon>
+            <span>常见问题</span>
+          </el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu index="extend-content">
+          <template #title>
+            <el-icon><Expand /></el-icon>
+            <span>扩展内容</span>
+          </template>
           <el-menu-item index="/admin/carousel" @dblclick="handleMenuDblClick('/admin/carousel')">
             <el-icon><Picture /></el-icon>
             <span>图片管理</span>
+          </el-menu-item>
+          <el-menu-item index="/admin/company-profile" @dblclick="handleMenuDblClick('/admin/company-profile')">
+            <el-icon><OfficeBuilding /></el-icon>
+            <span>企业简介</span>
           </el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="settings">
@@ -44,12 +76,6 @@
         </el-sub-menu>
         <!-- 后续可以添加更多菜单项 -->
       </el-menu>
-      <div class="sidebar-footer">
-        <el-button type="primary" link @click="goToFrontend">
-          <el-icon><Back /></el-icon>
-          返回前台
-        </el-button>
-      </div>
     </aside>
 
     <!-- 右侧内容区 -->
@@ -74,7 +100,7 @@
           v-for="tab in openedTabs"
           :key="tab.path"
           :type="route.path === tab.path ? 'primary' : 'info'"
-          closable
+          :closable="tab.path !== '/admin'"
           @click="handleTabClick(tab.path)"
           @close="handleTabClose(tab.path)"
           class="tab-item"
@@ -85,16 +111,7 @@
 
       <!-- 页面内容 -->
       <main class="admin-content">
-        <!-- 当没有标签页时显示欢迎页面 -->
-        <div v-if="openedTabs.length === 0" class="welcome-page">
-          <div class="welcome-content">
-            <el-icon :size="80" color="#909399"><Setting /></el-icon>
-            <h2>欢迎使用后台管理系统</h2>
-            <p>请从左侧菜单选择功能开始使用</p>
-          </div>
-        </div>
-        <!-- 有标签页时显示路由内容 -->
-        <router-view v-else :key="routeKey" />
+        <router-view :key="route.path + '-' + routeKey" />
       </main>
     </div>
   </div>
@@ -103,20 +120,25 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Menu, Back, Setting, Tools, Picture } from '@element-plus/icons-vue'
+import { Menu, Setting, Tools, Picture, OfficeBuilding, Document, DocumentCopy, Expand, Phone, DataAnalysis } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
 const routeKey = ref(0)
 
-// 打开的标签页列表
-const openedTabs = ref([])
+// 打开的标签页列表（仪表盘固定第一个）
+const openedTabs = ref([{ path: '/admin', title: '仪表盘' }])
 
 // 页面标题映射
 const pageTitles = {
+  '/admin': '仪表盘',
   '/admin/site-info': '站点管理',
+  '/admin/company-info': '公司信息',
   '/admin/navigation': '栏目管理',
   '/admin/carousel': '图片管理',
+  '/admin/company-profile': '企业简介',
+  '/admin/news': '新闻管理',
+  '/admin/faq': '常见问题',
   '/admin/system-settings': '系统设置'
 }
 
@@ -126,8 +148,16 @@ const activeMenu = computed(() => route.path)
 // 根据当前路由决定是否展开子菜单
 const defaultOpeneds = computed(() => {
   // 如果当前路由在"基础内容"子菜单下，则展开该子菜单
-  if (route.path === '/admin/site-info' || route.path === '/admin/navigation' || route.path === '/admin/carousel') {
+  if (route.path === '/admin/site-info' || route.path === '/admin/company-info' || route.path === '/admin/navigation') {
     return ['basic-info']
+  }
+  // 如果当前路由在"扩展内容"子菜单下，则展开该子菜单
+  if (route.path === '/admin/carousel' || route.path === '/admin/company-profile') {
+    return ['extend-content']
+  }
+  // 如果当前路由在"文章内容"子菜单下，则展开该子菜单
+  if (route.path === '/admin/news' || route.path === '/admin/faq') {
+    return ['article-content']
   }
   // 如果当前路由在"设置"子菜单下，则展开该子菜单
   if (route.path === '/admin/system-settings') {
@@ -163,6 +193,7 @@ const handleTabClick = (path) => {
 
 // 关闭标签页
 const handleTabClose = (path) => {
+  if (path === '/admin') return // 仪表盘不可关闭
   const index = openedTabs.value.findIndex(tab => tab.path === path)
   if (index === -1) return
 
@@ -170,12 +201,10 @@ const handleTabClose = (path) => {
 
   // 如果关闭的是当前页面
   if (route.path === path) {
-    // 如果还有其他标签页，跳转到最后一个标签页
     if (openedTabs.value.length > 0) {
       const lastTab = openedTabs.value[openedTabs.value.length - 1]
       router.push(lastTab.path)
     } else {
-      // 如果没有标签页了，跳转到后台首页
       router.push('/admin')
     }
   }
@@ -183,21 +212,10 @@ const handleTabClose = (path) => {
 
 // 监听路由变化，自动添加标签页
 watch(() => route.path, (newPath) => {
-  // 如果跳转到后台首页，清空所有标签页
-  if (newPath === '/admin') {
-    openedTabs.value = []
-    return
-  }
-
-  // 其他页面，添加标签页
   if (pageTitles[newPath]) {
     addTab(newPath)
   }
 }, { immediate: true })
-
-const goToFrontend = () => {
-  router.push('/')
-}
 
 // 处理菜单单击，只有不在当前页面时才导航
 const handleMenuSelect = (index) => {
@@ -260,21 +278,8 @@ const handleMenuDblClick = (index) => {
 }
 
 /* 子菜单项样式调整 */
-.admin-menu :deep(.el-menu-item) {
+.admin-menu :deep(.el-sub-menu .el-menu-item) {
   padding-left: 50px !important;
-}
-
-.sidebar-footer {
-  padding: 20px;
-  border-top: 1px solid #3d4a5a;
-}
-
-.sidebar-footer .el-button {
-  color: #bfcbd9;
-}
-
-.sidebar-footer .el-button:hover {
-  color: #409EFF;
 }
 
 /* 右侧内容区 */
@@ -351,31 +356,5 @@ const handleMenuDblClick = (index) => {
   flex: 1;
   padding: 0;
   overflow: auto;
-}
-
-/* 欢迎页面 */
-.welcome-page {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  min-height: 500px;
-}
-
-.welcome-content {
-  text-align: center;
-}
-
-.welcome-content h2 {
-  margin: 20px 0 10px;
-  color: #303133;
-  font-size: 24px;
-  font-weight: 500;
-}
-
-.welcome-content p {
-  color: #909399;
-  font-size: 14px;
-  margin: 0;
 }
 </style>

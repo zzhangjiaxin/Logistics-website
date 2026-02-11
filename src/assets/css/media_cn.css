@@ -631,6 +631,9 @@
 	.editorc table.border td table {margin-bottom:0px;}
 	.editorc table.border td p {margin:0px;padding:0px;}
 	.editorc table.border th p {margin:0px;padding:0px;}
+	.editorc .wx-card {flex-direction:column;max-width:100%;}
+	.editorc .wx-card-qrcode {flex:0 0 auto;width:100%;max-width:200px;margin:0 auto;padding:15px;}
+	.editorc .wx-card-info {padding:15px 20px;}
 		
 	.editorc_tbe table {margin-bottom:15px;border:none;border-top:1px solid #ddd;border-left:1px solid #ddd;}
 	.editorc_tbe td {padding:6px 5px;border:none;border-right:1px solid #ddd;border-bottom:1px solid #ddd;}

@@ -60,7 +60,7 @@
         <!-- FAQ列表 -->
         <ul class="list">
           <li v-for="faq in faqData" :key="faq.id">
-            <router-link :to="`/arts_ds${faq.id}`">{{ faq.question }}</router-link>
+            <router-link :to="`/arts_ds/${faq.id}`">{{ faq.title }}</router-link>
           </li>
         </ul>
       </div>
@@ -98,6 +98,7 @@ import { showMessage } from '@/utils/message'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import { useScrollPosition } from '@/composables/useScrollPosition'
 import { useBannerData } from '@/composables/useBannerData'
+import { getPublicArticleList } from '@/api/article'
 
 useScrollPosition()
 
@@ -112,6 +113,7 @@ const { bannerBg, mainTitle, subTitle } = useBannerData('help', {
   subTitle: '始于客户需求，终于客户满意'
 })
 
+// 默认分类图标
 import help1 from '@/assets/uploadfiles/20230706-143302.png'
 import help2 from '@/assets/uploadfiles/20230706-143344.png'
 import help3 from '@/assets/uploadfiles/20230706-143353.png'
@@ -119,24 +121,7 @@ import help4 from '@/assets/uploadfiles/20230706-143315.png'
 import help5 from '@/assets/uploadfiles/20230706-143325.png'
 import help6 from '@/assets/uploadfiles/20230706-143336.png'
 
-const searchKey = ref('')
-const selectedCategory = ref(null)
-
-const handleSearch = () => {
-  // 检查是否输入了搜索关键词
-  if (!searchKey.value.trim()) {
-    // 显示提示信息（与源网页一致）
-    showMessage('请输入搜索关键词')
-    return
-  }
-
-  // 跳转到搜索页面（与源网页一致：search.html?search_key=关键词）
-  router.push({
-    path: '/help-search',
-    query: { search_key: searchKey.value.trim() }
-  })
-}
-
+// 硬编码帮助分类
 const helpCategories = [
   { id: 1, icon: help1, title: '安全合规性', desc: '安全合规性', category: 'security' },
   { id: 2, icon: help2, title: '新手指南', desc: '帐户使用情况', category: 'beginner' },
@@ -146,51 +131,21 @@ const helpCategories = [
   { id: 6, icon: help6, title: '增值服务', desc: '多种创新增值功能', category: 'value-added' }
 ]
 
-// 硬编码的FAQ数据
-const allFaqData = [
-  {
-    id: 10,
-    question: '"CE"证明是什么？',
-    category: 'security'
-  },
-  {
-    id: 9,
-    question: 'FOB、CNF、CIF指的是什么？',
-    category: 'self-service'
-  },
-  {
-    id: 8,
-    question: 'UPS国际快递为什么分蓝单和红单',
-    category: 'self-service'
-  },
-  {
-    id: 7,
-    question: '香港DHL和大陆DHL的区别 ?',
-    category: 'self-service'
-  },
-  {
-    id: 6,
-    question: '国际快递公司是怎样测量货物尺寸的?',
-    category: 'self-service'
-  },
-  {
-    id: 5,
-    question: '物流的定义',
-    category: 'beginner'
-  },
-  {
-    id: 4,
-    question: '国际物流中的角色',
-    category: 'beginner'
-  },
-  {
-    id: 3,
-    question: '一般贸易进出口流程图',
-    category: 'beginner'
-  }
-]
+const searchKey = ref('')
 
-const filteredFaqData = ref([...allFaqData])
+// FAQ列表
+const faqList = ref([])
+
+const handleSearch = () => {
+  if (!searchKey.value.trim()) {
+    showMessage('请输入搜索关键词')
+    return
+  }
+  router.push({
+    path: '/help-search',
+    query: { search_key: searchKey.value.trim() }
+  })
+}
 
 // 判断是否为常见问题页面
 const isFaqPage = computed(() => {
@@ -220,35 +175,36 @@ const categoryTitle = computed(() => {
 
 // 显示的FAQ数据
 const faqData = computed(() => {
-  if (isFaqPage.value) {
-    // 常见问题页面：显示所有问题
-    return filteredFaqData.value
-  } else if (isCategoryPage.value) {
-    // 分类页面：不显示任何问题（与源网页一致）
+  if (isCategoryPage.value) {
+    // 分类页面：不显示FAQ列表（与原来一致）
     return []
-  } else if (selectedCategory.value) {
-    // 主页筛选：显示筛选后的问题
-    return filteredFaqData.value.filter(item => item.category === selectedCategory.value)
   }
-  // 主页默认：显示所有问题
-  return filteredFaqData.value
+  return faqList.value
 })
 
-// 按分类筛选FAQ（仅在主页使用）
-const filterByCategory = (category) => {
-  selectedCategory.value = selectedCategory.value === category ? null : category
+// 从API获取FAQ列表
+async function fetchFaqList() {
+  try {
+    const res = await getPublicArticleList({
+      type: 'faq',
+      page: 1,
+      pageSize: 100
+    })
+    faqList.value = res.data.list || []
+  } catch (e) {
+    console.error('获取FAQ列表失败:', e)
+    faqList.value = []
+  }
 }
 
 // 监听路由变化，重置状态
 watch(() => route.path, () => {
-  selectedCategory.value = null
   searchKey.value = ''
-  filteredFaqData.value = [...allFaqData]
 })
 
-// 组件挂载时不需要获取数据，直接使用硬编码数据
+// 页面加载时获取数据
 onMounted(() => {
-  // 数据已经在初始化时设置好了
+  fetchFaqList()
 })
 </script>
 

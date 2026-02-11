@@ -52,7 +52,7 @@
         <li class="login">
           <a href="javascript:;" @click="handleLoginClick">登录</a>
         </li>
-        <li class="tel">400-836-9156</li>
+        <li class="tel">{{ mainPhone }}</li>
       </ul>
       <div id="mheader_menu" @click="toggleMenu">
         <span :class="{ active: menuOpen }"></span>
@@ -67,7 +67,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useMenuStore, useUIStore, useSiteStore } from '@/stores'
+import { useMenuStore, useUIStore, useSiteStore, useCompanyInfoStore } from '@/stores'
 import LoginModal from '@/components/common/LoginModal.vue'
 import { getEnabledNavigationTree } from '@/api/navigation'
 import { BASE_URL } from '@/utils/request'
@@ -76,6 +76,7 @@ const route = useRoute()
 const menuStore = useMenuStore()
 const uiStore = useUIStore()
 const siteStore = useSiteStore()
+const companyInfoStore = useCompanyInfoStore()
 
 // 使用 Pinia store 中的状态
 const menuOpen = computed(() => menuStore.isOpen)
@@ -113,6 +114,15 @@ const siteTitle = computed(() => {
 // 计算属性：站点副标题
 const siteSubtitle = computed(() => {
   return siteStore.siteInfo.siteSubtitle || ''
+})
+
+// 计算属性：主电话（取分支机构第一条的电话）
+const mainPhone = computed(() => {
+  const branches = companyInfoStore.branches
+  if (branches && branches.length > 0) {
+    return branches[0].phone || '400-836-9156'
+  }
+  return '400-836-9156'
 })
 
 // 获取启用的导航列表（树形结构）

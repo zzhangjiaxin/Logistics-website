@@ -77,6 +77,41 @@
               </div>
             </el-form-item>
 
+            <!-- 微信公众号二维码 -->
+            <el-form-item label="微信二维码" prop="wechatQrcode">
+              <div class="image-upload-wrapper">
+                <div class="image-input-row">
+                  <el-input v-model="formData.wechatQrcode" placeholder="请输入图片路径或上传图片" />
+                  <el-upload
+                    :show-file-list="false"
+                    :http-request="handleWechatQrcodeUpload"
+                    accept="image/*"
+                  >
+                    <el-button type="primary">上传图片</el-button>
+                  </el-upload>
+                </div>
+                <div class="image-preview-container" v-if="formData.wechatQrcode">
+                  <div class="image-preview-box">
+                    <img :src="wechatQrcodeUrl" alt="微信公众号二维码" @error="handleImageError" />
+                    <div class="image-delete-btn" @click="formData.wechatQrcode = ''">
+                      <el-icon><Close /></el-icon>
+                    </div>
+                  </div>
+                </div>
+                <div class="upload-tip">建议尺寸：200x200px，支持 jpg、png 格式</div>
+              </div>
+            </el-form-item>
+
+            <!-- 视频号 -->
+            <el-form-item label="视频号" prop="videoAccount">
+              <el-input v-model="formData.videoAccount" placeholder="请输入视频号名称" maxlength="100" />
+            </el-form-item>
+
+            <!-- 抖音号 -->
+            <el-form-item label="抖音号" prop="douyinAccount">
+              <el-input v-model="formData.douyinAccount" placeholder="请输入抖音号" maxlength="100" />
+            </el-form-item>
+
             <!-- 站点备案 -->
             <el-form-item label="站点备案" prop="siteIcp">
               <el-input v-model="formData.siteIcp" placeholder="请输入站点备案号，如：粤ICP备2021000263号" maxlength="100" />
@@ -158,164 +193,111 @@
               </div>
             </el-form-item>
 
-            <!-- 数字卡片配置 -->
-            <el-divider content-position="left">数字卡片配置</el-divider>
-
-            <div class="cards-grid">
-              <el-card
-                v-for="(card, index) in aboutFormData.cards"
-                :key="card.key"
-                class="card-item"
-                :class="{ 'is-collapsed': collapsedCards[index] }"
-                shadow="hover"
-              >
-                <template #header>
-                  <div class="card-header">
-                    <div class="card-header-left" @click="toggleCardCollapse(index)">
-                      <el-icon class="collapse-icon" :class="{ 'is-collapsed': collapsedCards[index] }">
-                        <ArrowRight />
-                      </el-icon>
-                      <span class="card-title">卡片 {{ index + 1 }}</span>
-                      <span class="card-preview" v-if="collapsedCards[index] && (card.number || card.label)">
-                        - {{ card.number }} {{ card.label }}
-                      </span>
-                    </div>
-                    <div class="card-actions" @click.stop>
-                      <el-tag
-                        :type="card.isEnabled === 1 ? 'success' : 'info'"
-                        size="small"
-                      >
-                        {{ card.isEnabled === 1 ? '已启用' : '已禁用' }}
-                      </el-tag>
+            <el-collapse v-model="aboutCollapse" class="config-collapse">
+              <el-collapse-item title="数字卡片配置" name="cards">
+                <el-table :data="aboutFormData.cards" border style="width: 100%">
+                  <el-table-column label="序号" width="60" align="center">
+                    <template #default="{ $index }">{{ $index + 1 }}</template>
+                  </el-table-column>
+                  <el-table-column label="数字" min-width="150">
+                    <template #default="{ row }">
+                      <el-input v-model="row.number" placeholder="如：5、15、30+" maxlength="50" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="描述" min-width="200">
+                    <template #default="{ row }">
+                      <el-input v-model="row.label" placeholder="如：5个分公司" maxlength="100" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="启用" width="80" align="center">
+                    <template #default="{ row }">
+                      <el-switch v-model="row.isEnabled" :active-value="1" :inactive-value="0" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column width="80" align="center">
+                    <template #header>
+                      <el-button type="primary" size="small" text @click="addCard">
+                        <el-icon><Plus /></el-icon>
+                      </el-button>
+                    </template>
+                    <template #default="{ $index }">
                       <el-button
                         type="danger"
                         size="small"
                         text
-                        @click="removeCard(index)"
+                        @click="removeCard($index)"
                         v-if="aboutFormData.cards.length > 1"
                       >
                         <el-icon><Delete /></el-icon>
                       </el-button>
-                    </div>
-                  </div>
-                </template>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </el-collapse-item>
 
-                <div class="card-content" v-show="!collapsedCards[index]">
-                  <el-form label-width="70px">
-                    <el-form-item label="数字">
-                      <el-input v-model="card.number" placeholder="如：5、15、30+、500+" maxlength="50" />
-                    </el-form-item>
-
-                    <el-form-item label="描述">
-                      <el-input v-model="card.label" placeholder="如：5个分公司、15年以上" maxlength="100" />
-                    </el-form-item>
-
-                    <el-form-item label="是否启用">
-                      <el-switch v-model="card.isEnabled" :active-value="1" :inactive-value="0" />
-                    </el-form-item>
-                  </el-form>
-                </div>
-              </el-card>
-            </div>
-
-            <el-form-item style="margin-top: 20px; margin-left: -50px;">
-              <el-button type="primary" plain @click="addCard">
-                <el-icon><Plus /></el-icon>
-                添加数字卡片
-              </el-button>
-              <span class="form-tip" style="margin-left: 10px;">可以添加任意数量的数字卡片</span>
-            </el-form-item>
-
-            <!-- 底部图片配置 -->
-            <el-divider content-position="left">底部图片配置</el-divider>
-
-            <div class="images-grid">
-              <el-card
-                v-for="(image, index) in aboutFormData.bottomImages"
-                :key="image.key"
-                class="image-item"
-                :class="{ 'is-collapsed': collapsedImages[index] }"
-                shadow="hover"
-              >
-                <template #header>
-                  <div class="card-header">
-                    <div class="card-header-left" @click="toggleImageCollapse(index)">
-                      <el-icon class="collapse-icon" :class="{ 'is-collapsed': collapsedImages[index] }">
-                        <ArrowRight />
-                      </el-icon>
-                      <span class="card-title">底部图片 {{ index + 1 }}</span>
-                      <span class="card-preview" v-if="collapsedImages[index] && image.title">
-                        - {{ image.title }}
-                      </span>
-                    </div>
-                    <div class="card-actions" @click.stop>
-                      <el-tag
-                        :type="image.isEnabled === 1 ? 'success' : 'info'"
-                        size="small"
-                      >
-                        {{ image.isEnabled === 1 ? '已启用' : '已禁用' }}
-                      </el-tag>
-                      <el-button
-                        type="danger"
-                        size="small"
-                        text
-                        @click="removeBottomImage(index)"
-                        v-if="aboutFormData.bottomImages.length > 1"
-                      >
-                        <el-icon><Delete /></el-icon>
-                      </el-button>
-                    </div>
-                  </div>
-                </template>
-
-                <div class="card-content" v-show="!collapsedImages[index]">
-                  <el-form label-width="70px">
-                    <el-form-item label="图片">
-                      <div class="image-upload-wrapper">
-                        <div class="image-input-row">
-                          <el-input v-model="image.imageUrl" placeholder="请输入图片路径或上传图片" />
-                          <el-upload
-                            :show-file-list="false"
-                            :http-request="(options) => handleBottomImageUpload(options, index)"
-                            accept="image/*"
-                          >
-                            <el-button type="primary" size="small">上传</el-button>
-                          </el-upload>
+              <el-collapse-item title="底部图片配置" name="images">
+                <el-table :data="aboutFormData.bottomImages" border style="width: 100%">
+                  <el-table-column label="序号" width="60" align="center">
+                    <template #default="{ $index }">{{ $index + 1 }}</template>
+                  </el-table-column>
+                  <el-table-column label="图片" width="150">
+                    <template #default="{ row, $index }">
+                      <div class="table-image-cell">
+                        <div class="table-image-preview" v-if="row.imageUrl">
+                          <img :src="getImageUrl(row.imageUrl)" :alt="`底部图片${$index + 1}`" @error="handleImageError" />
                         </div>
-                        <div class="image-preview-container" v-if="image.imageUrl">
-                          <div class="image-preview-box small">
-                            <img :src="getImageUrl(image.imageUrl)" :alt="`底部图片${index + 1}`" @error="handleImageError" />
-                            <div class="image-delete-btn" @click="image.imageUrl = ''">
-                              <el-icon><Close /></el-icon>
-                            </div>
-                          </div>
-                        </div>
+                        <span v-else class="no-image-text">未上传</span>
                       </div>
-                    </el-form-item>
-
-                    <el-form-item label="标题">
-                      <el-input v-model="image.title" placeholder="如：企业文化、发展历程" maxlength="100" />
-                    </el-form-item>
-
-                    <el-form-item label="链接">
-                      <el-input v-model="image.linkUrl" placeholder="如：/aboutus#dw2" maxlength="500" />
-                    </el-form-item>
-
-                    <el-form-item label="是否启用">
-                      <el-switch v-model="image.isEnabled" :active-value="1" :inactive-value="0" />
-                    </el-form-item>
-                  </el-form>
-                </div>
-              </el-card>
-            </div>
-
-            <el-form-item style="margin-top: 20px; margin-left: -50px;">
-              <el-button type="primary" plain @click="addBottomImage">
-                <el-icon><Plus /></el-icon>
-                添加底部图片
-              </el-button>
-              <span class="form-tip" style="margin-left: 10px;">可以添加任意数量的底部图片</span>
-            </el-form-item>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="标题" min-width="140">
+                    <template #default="{ row }">
+                      <el-input v-model="row.title" placeholder="如：企业文化" maxlength="100" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="链接" min-width="160">
+                    <template #default="{ row }">
+                      <el-input v-model="row.linkUrl" placeholder="如：/aboutus#dw2" maxlength="500" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="启用" width="80" align="center">
+                    <template #default="{ row }">
+                      <el-switch v-model="row.isEnabled" :active-value="1" :inactive-value="0" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column width="100" align="center">
+                    <template #header>
+                      <el-button type="primary" size="small" text @click="addBottomImage">
+                        <el-icon><Plus /></el-icon>
+                      </el-button>
+                    </template>
+                    <template #default="{ row, $index }">
+                      <div class="table-actions">
+                        <el-upload
+                          :show-file-list="false"
+                          :http-request="(options) => handleBottomImageUpload(options, $index)"
+                          accept="image/*"
+                          class="inline-upload"
+                        >
+                          <el-button type="primary" size="small" text>
+                            <el-icon><UploadFilled /></el-icon>
+                          </el-button>
+                        </el-upload>
+                        <el-button
+                          type="danger"
+                          size="small"
+                          text
+                          @click="removeBottomImage($index)"
+                          v-if="aboutFormData.bottomImages.length > 1"
+                        >
+                          <el-icon><Delete /></el-icon>
+                        </el-button>
+                      </div>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </el-collapse-item>
+            </el-collapse>
 
             <!-- 操作按钮 -->
             <el-form-item style="margin-left: -50px;">
@@ -334,7 +316,7 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElNotification, ElMessageBox } from 'element-plus'
-import { Close, Plus, Delete, ArrowRight } from '@element-plus/icons-vue'
+import { Close, Plus, Delete, UploadFilled } from '@element-plus/icons-vue'
 import { getSiteInfo, saveSiteInfo } from '@/api/siteInfo'
 import { getHomeAboutInfo, saveHomeAboutInfo } from '@/api/homeAbout'
 import { uploadImage } from '@/api/upload'
@@ -351,10 +333,7 @@ const loading = ref(false)
 const aboutLoading = ref(false)
 const submitting = ref(false)
 const aboutSubmitting = ref(false)
-
-// 卡片折叠状态
-const collapsedCards = ref({}) // 记录每个卡片的折叠状态
-const collapsedImages = ref({}) // 记录每个图片的折叠状态
+const aboutCollapse = ref(['cards', 'images'])
 
 // 站点信息表单数据
 const formData = reactive({
@@ -366,7 +345,10 @@ const formData = reactive({
   footerLogo: '',
   siteIcp: '',
   siteTemplate: '',
-  footerInfo: ''
+  footerInfo: '',
+  wechatQrcode: '',
+  videoAccount: '',
+  douyinAccount: ''
 })
 
 // 关于我们表单数据（灵活配置）
@@ -402,6 +384,9 @@ const siteLogoUrl = computed(() => getImageUrl(formData.siteLogo))
 // 计算属性：尾部LOGO完整URL
 const footerLogoUrl = computed(() => getImageUrl(formData.footerLogo))
 
+// 计算属性：微信二维码完整URL
+const wechatQrcodeUrl = computed(() => getImageUrl(formData.wechatQrcode))
+
 // 计算属性：站点模板显示名称
 const siteTemplateDisplay = computed(() => {
   const templateMap = {
@@ -414,7 +399,7 @@ const siteTemplateDisplay = computed(() => {
 
 // 图片加载错误处理
 const handleImageError = (e) => {
-  e.target.style.display = 'none'
+  // 不隐藏元素，避免后续 src 更新后仍不可见
 }
 
 // 获取站点信息
@@ -457,10 +442,6 @@ const fetchAboutInfo = async () => {
           isEnabled: card.isEnabled,
           sortOrder: card.sortOrder
         }))
-        // 初始化所有卡片为折叠状态
-        aboutFormData.cards.forEach((_, index) => {
-          collapsedCards.value[index] = true
-        })
       }
 
       // 底部图片
@@ -474,10 +455,6 @@ const fetchAboutInfo = async () => {
           isEnabled: img.isEnabled,
           sortOrder: img.sortOrder
         }))
-        // 初始化所有图片为折叠状态
-        aboutFormData.bottomImages.forEach((_, index) => {
-          collapsedImages.value[index] = true
-        })
       }
 
       originalAboutData.value = JSON.parse(JSON.stringify(aboutFormData))
@@ -532,6 +509,36 @@ const handleFooterLogoUpload = async (options) => {
     const res = await uploadImage(options.file, 'footer-logo')
     if (res.code === 200) {
       formData.footerLogo = res.data.url
+      ElNotification({
+        title: '成功',
+        message: '上传成功',
+        type: 'success',
+        duration: 3000
+      })
+    } else {
+      ElNotification({
+        title: '错误',
+        message: res.message || '上传失败',
+        type: 'error',
+        duration: 3000
+      })
+    }
+  } catch (error) {
+    ElNotification({
+      title: '错误',
+      message: '上传失败',
+      type: 'error',
+      duration: 3000
+    })
+  }
+}
+
+// 微信公众号二维码上传
+const handleWechatQrcodeUpload = async (options) => {
+  try {
+    const res = await uploadImage(options.file, 'wechat-qrcode')
+    if (res.code === 200) {
+      formData.wechatQrcode = res.data.url
       ElNotification({
         title: '成功',
         message: '上传成功',
@@ -618,15 +625,12 @@ const handleBottomImageUpload = async (options, index) => {
 
 // 添加数字卡片
 const addCard = () => {
-  const newIndex = aboutFormData.cards.length
   aboutFormData.cards.push({
     key: Date.now() + Math.random(),
     number: '',
     label: '',
     isEnabled: 1
   })
-  // 新添加的卡片默认折叠
-  collapsedCards.value[newIndex] = true
 }
 
 // 删除数字卡片
@@ -667,7 +671,6 @@ const removeCard = async (index) => {
 
 // 添加底部图片
 const addBottomImage = () => {
-  const newIndex = aboutFormData.bottomImages.length
   aboutFormData.bottomImages.push({
     key: Date.now() + Math.random(),
     imageUrl: '',
@@ -675,8 +678,6 @@ const addBottomImage = () => {
     linkUrl: '',
     isEnabled: 1
   })
-  // 新添加的图片默认折叠
-  collapsedImages.value[newIndex] = true
 }
 
 // 删除底部图片
@@ -713,30 +714,6 @@ const removeBottomImage = async (index) => {
   } catch (error) {
     // 用户取消删除
   }
-}
-
-// 切换卡片折叠状态
-const toggleCardCollapse = (index) => {
-  // 使用 Vue 的响应式 API 确保更新被追踪
-  if (collapsedCards.value[index]) {
-    delete collapsedCards.value[index]
-  } else {
-    collapsedCards.value[index] = true
-  }
-  // 强制触发响应式更新
-  collapsedCards.value = { ...collapsedCards.value }
-}
-
-// 切换图片折叠状态
-const toggleImageCollapse = (index) => {
-  // 使用 Vue 的响应式 API 确保更新被追踪
-  if (collapsedImages.value[index]) {
-    delete collapsedImages.value[index]
-  } else {
-    collapsedImages.value[index] = true
-  }
-  // 强制触发响应式更新
-  collapsedImages.value = { ...collapsedImages.value }
 }
 
 // 提交站点信息表单
@@ -933,181 +910,52 @@ onMounted(() => {
   margin-top: 4px;
 }
 
-/* 卡片网格布局 - 恢复原来的单列布局 */
-.cards-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 20px;
-  max-width: 670px;
+/* 折叠面板样式 */
+.config-collapse {
   margin-left: 70px;
-}
-
-.cards-grid .card-item {
-  width: 100% !important;
-  max-width: 100%;
-  margin-bottom: 0;
-  transition: all 0.3s ease;
-  box-sizing: border-box;
-}
-
-/* 图片网格布局 - 恢复原来的单列布局 */
-.images-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  max-width: 800px;
   margin-bottom: 20px;
-  max-width: 670px;
-  margin-left: 70px;
 }
 
-.images-grid .image-item {
-  width: 100% !important;
-  max-width: 100%;
-  margin-bottom: 0;
-  transition: all 0.3s ease;
-  box-sizing: border-box;
-}
-
-/* 确保 el-card 组件宽度一致 */
-.cards-grid .card-item :deep(.el-card),
-.images-grid .image-item :deep(.el-card) {
-  width: 100% !important;
-  box-sizing: border-box;
-}
-
-.cards-grid .card-item :deep(.el-card__header),
-.images-grid .image-item :deep(.el-card__header) {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 16px;
-}
-
-.cards-grid .card-item :deep(.el-card__body),
-.images-grid .image-item :deep(.el-card__body) {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 16px;
-}
-
-/* 卡片头部样式 */
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card-header-left {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  flex: 1;
-  user-select: none;
-}
-
-.card-header-left:hover .card-title {
-  color: #409eff;
-}
-
-.collapse-icon {
-  margin-right: 8px;
-  transition: transform 0.3s;
-  color: #909399;
-}
-
-.collapse-icon.is-collapsed {
-  transform: rotate(0deg);
-}
-
-.collapse-icon:not(.is-collapsed) {
-  transform: rotate(90deg);
-}
-
-.card-title {
+.config-collapse :deep(.el-collapse-item__header) {
   font-size: 14px;
   font-weight: 600;
   color: #606266;
-  transition: color 0.3s;
 }
 
-.card-preview {
-  margin-left: 8px;
+.config-collapse :deep(.el-collapse-item__content) {
+  padding-bottom: 16px;
+}
+
+.table-image-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.table-image-preview img {
+  max-width: 120px;
+  max-height: 60px;
+  border-radius: 4px;
+  border: 1px solid #dcdfe6;
+}
+
+.no-image-text {
   color: #909399;
-  font-weight: normal;
-  font-size: 13px;
+  font-size: 12px;
 }
 
-.card-actions {
+.table-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 4px;
 }
 
-/* 卡片内容区域 */
-.card-content {
-  transition: all 0.3s;
+.inline-upload {
+  display: inline-flex;
 }
-
-/* 折叠状态的卡片 - 简化版本 */
-.card-item.is-collapsed,
-.image-item.is-collapsed {
-  cursor: pointer;
-}
-
-/* 折叠时隐藏卡片主体 */
-.card-item.is-collapsed :deep(.el-card__body),
-.image-item.is-collapsed :deep(.el-card__body) {
-  display: none;
-}
-
-/* 折叠时的卡片头部样式 */
-.card-item.is-collapsed :deep(.el-card__header),
-.image-item.is-collapsed :deep(.el-card__header) {
-  margin-bottom: 0;
-  padding: 16px;
-}
-
-/* 展开状态的卡片主体 */
-.card-item:not(.is-collapsed) :deep(.el-card__body),
-.image-item:not(.is-collapsed) :deep(.el-card__body) {
-  display: block;
-  padding: 16px;
-}
-
-/* 展开状态的卡片 */
-.card-item:not(.is-collapsed) .el-card__body,
-.image-item:not(.is-collapsed) .el-card__body {
-  padding: 16px;
-}
-
-/* 卡片内表单样式 */
-.card-item .el-form-item,
-.image-item .el-form-item {
-  margin-bottom: 16px;
-}
-
-.card-item .el-form-item:last-child,
-.image-item .el-form-item:last-child {
-  margin-bottom: 0;
-}
-
-/* 统一标签宽度，确保对齐 */
-.card-item :deep(.el-form-item__label),
-.image-item :deep(.el-form-item__label) {
-  font-weight: 500;
-  color: #606266;
-  text-align: right;
-  padding-right: 12px;
-}
-
-/* 小尺寸图片预览 */
-.image-preview-box.small img {
-  max-width: 200px;
-  max-height: 100px;
-}
-
-/* 折叠面板样式（已移除，保留注释供参考） */
-/* 现在使用卡片网格布局代替折叠面板 */
 
 /* Tab 优化样式 */
 :deep(.el-card__body) {

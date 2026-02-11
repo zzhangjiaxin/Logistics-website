@@ -18,18 +18,18 @@
         <li>
           <h3>联系我们</h3>
           <div class="lxfs">
-            <p class="tel">电话：400-836-9156</p>
+            <p class="tel">电话：{{ mainPhone }}</p>
             <p class="address">
               <span>地址：</span>
-              <span>深圳市宝安区福海街道展景路83号中港广场6栋B座1005</span>
+              <span>{{ mainAddress }}</span>
             </p>
-            <p class="shipinhao"><i class="fyicon icon-weixin"></i>视频号：翔宇达运通国际</p>
-            <p class="douyin">抖音：翔宇达运通国际物流</p>
+            <p class="shipinhao" v-if="siteStore.siteInfo.videoAccount"><i class="fyicon icon-weixin"></i>视频号：{{ siteStore.siteInfo.videoAccount }}</p>
+            <p class="douyin" v-if="siteStore.siteInfo.douyinAccount">抖音：{{ siteStore.siteInfo.douyinAccount }}</p>
           </div>
         </li>
       </ul>
-      <div class="qrcode">
-        <img src="@/assets/uploadfiles/20230704-152915.jpg" alt="微信公众号">
+      <div class="qrcode" v-if="qrcodeUrl">
+        <img :src="qrcodeUrl" alt="微信公众号">
         <p>扫码关注微信公众号</p>
       </div>
     </div>
@@ -43,11 +43,12 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useSiteStore } from '@/stores'
+import { useSiteStore, useCompanyInfoStore } from '@/stores'
 import { BASE_URL } from '@/utils/request'
 import { getEnabledNavigationTree } from '@/api/navigation'
 
 const siteStore = useSiteStore()
+const companyInfoStore = useCompanyInfoStore()
 
 // 导航列表（只取有子菜单的导航项用于页脚展示，排除首页、帮助中心、联系我们等无子菜单项）
 const footerNavs = ref([])
@@ -64,6 +65,29 @@ const getFullImageUrl = (imageUrl) => {
 // 计算属性：尾部LOGO完整URL
 const footerLogoUrl = computed(() => {
   return getFullImageUrl(siteStore.siteInfo.footerLogo)
+})
+
+// 计算属性：微信公众号二维码URL（从站点信息获取）
+const qrcodeUrl = computed(() => {
+  return getFullImageUrl(siteStore.siteInfo.wechatQrcode)
+})
+
+// 计算属性：主电话（取分支机构第一条）
+const mainPhone = computed(() => {
+  const branches = companyInfoStore.branches
+  if (branches && branches.length > 0) {
+    return branches[0].phone || '400-836-9156'
+  }
+  return '400-836-9156'
+})
+
+// 计算属性：主地址（取分支机构第一条）
+const mainAddress = computed(() => {
+  const branches = companyInfoStore.branches
+  if (branches && branches.length > 0) {
+    return branches[0].address || '深圳市宝安区福海街道展景路83号中港广场6栋B座1005'
+  }
+  return '深圳市宝安区福海街道展景路83号中港广场6栋B座1005'
 })
 
 // 计算属性：尾部信息HTML（自动拼接备案号）

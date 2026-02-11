@@ -288,6 +288,8 @@ a {outline:none;-moz-outline:none;blr:expression(this.onFocus=this.blur());}
 .editorc_box {padding-top:2.5%;width:100%;box-sizing:border-box;overflow:hidden;}
 .editorc {font-size:16px;line-height:1.9;}
 .editorc img {max-width:100%;height:auto;margin-top:20px;margin-bottom:20px;}
+.editorc section img {margin-top:0;margin-bottom:0;}
+.editorc > section {max-width:100%;}
 .editorc p {margin-bottom:20px;}
 .editorc p:last-child {margin-bottom:0px;}
 .editorc a {text-decoration:underline;}
@@ -325,6 +327,16 @@ a {outline:none;-moz-outline:none;blr:expression(this.onFocus=this.blur());}
 .editorc_tbe table.no-border table {border:none;}
 .editorc_tbe table.no-border td {border:none;padding:0px;}
 .editorc_tbe table.no-border th {border:none;padding:0px;}
+
+/* 微信公众号卡片 */
+.editorc .wx-card {display:flex;align-items:center;max-width:580px;margin:20px 0;overflow:hidden;border-radius:4px;}
+.editorc .wx-card-qrcode {flex:0 0 190px;width:190px;background-color:#fff;display:flex;align-items:center;justify-content:center;padding:10px;box-sizing:border-box;}
+.editorc .wx-card-qrcode img {width:100%;height:auto;margin:0;padding:0;display:block;}
+.editorc .wx-card-info {flex:1 1 auto;background-color:rgb(95,156,239);padding:0 20px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;}
+.editorc .wx-card-info p {margin:0;padding:0;color:#fff;font-size:15px;line-height:1.6;}
+.editorc .wx-card-info .wx-card-title {font-weight:bold;margin-bottom:12px;}
+.editorc .wx-card-info .wx-card-item {margin-bottom:4px;}
+.editorc .wx-card-info .wx-card-item:last-child {margin-bottom:0;}
 
 #prevnext {position:relative;margin:3% auto 0px auto;padding:15px 150px 0px 0px;color:#999;font-size:14px;border-top:1px dashed #ccc;overflow:hidden;}
 #prevnext p {height:25px;}

@@ -41,18 +41,18 @@
         <!-- 搜索结果提示 -->
         <div v-if="searchKeyword" style="padding: 20px 0; color: #666;">
           <p>搜索关键词：<strong style="color: #333;">{{ searchKeyword }}</strong></p>
-          <p>找到 <strong style="color: #e60012;">{{ filteredFaqData.length }}</strong> 条相关问题</p>
+          <p>找到 <strong style="color: #e60012;">{{ total }}</strong> 条相关问题</p>
         </div>
 
         <!-- FAQ列表 -->
-        <ul class="list" v-if="filteredFaqData.length > 0">
-          <li v-for="faq in filteredFaqData" :key="faq.id">
-            <router-link :to="`/arts_ds${faq.id}`">{{ faq.question }}</router-link>
+        <ul class="list" v-if="faqList.length > 0">
+          <li v-for="faq in faqList" :key="faq.id">
+            <router-link :to="`/arts_ds${faq.id}`">{{ faq.title }}</router-link>
           </li>
         </ul>
 
         <!-- 无搜索结果提示 -->
-        <div v-else style="padding: 60px 0; text-align: center; color: #999;">
+        <div v-else-if="!loading" style="padding: 60px 0; text-align: center; color: #999;">
           <i class="layui-icon layui-icon-search" style="font-size: 60px; color: #ddd;"></i>
           <p style="margin-top: 20px; font-size: 16px;">未找到相关问题</p>
           <p style="margin-top: 10px;">
@@ -88,11 +88,12 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import { useScrollPosition } from '@/composables/useScrollPosition'
 import { useBannerData } from '@/composables/useBannerData'
+import { getPublicArticleList } from '@/api/article'
 
 useScrollPosition()
 
@@ -108,65 +109,40 @@ const { bannerBg, mainTitle, subTitle } = useBannerData('help-search', {
 
 // 搜索关键词（从URL参数获取）
 const searchKeyword = ref(route.query.search_key || '')
+const faqList = ref([])
+const total = ref(0)
+const loading = ref(false)
 
-// 硬编码的FAQ数据（与HelpView.vue保持一致）
-const allFaqData = [
-  {
-    id: 10,
-    question: '"CE"证明是什么？',
-    category: 'security'
-  },
-  {
-    id: 9,
-    question: 'FOB、CNF、CIF指的是什么？',
-    category: 'self-service'
-  },
-  {
-    id: 8,
-    question: 'UPS国际快递为什么分蓝单和红单',
-    category: 'self-service'
-  },
-  {
-    id: 7,
-    question: '香港DHL和大陆DHL的区别 ?',
-    category: 'self-service'
-  },
-  {
-    id: 6,
-    question: '国际快递公司是怎样测量货物尺寸的?',
-    category: 'self-service'
-  },
-  {
-    id: 5,
-    question: '物流的定义',
-    category: 'beginner'
-  },
-  {
-    id: 4,
-    question: '国际物流中的角色',
-    category: 'beginner'
-  },
-  {
-    id: 3,
-    question: '一般贸易进出口流程图',
-    category: 'beginner'
+// 从API获取搜索结果
+async function fetchSearchResults() {
+  loading.value = true
+  try {
+    const res = await getPublicArticleList({
+      type: 'faq',
+      keyword: searchKeyword.value.trim(),
+      page: 1,
+      pageSize: 100
+    })
+    faqList.value = res.data.list || []
+    total.value = res.data.total || 0
+  } catch (e) {
+    console.error('搜索FAQ失败:', e)
+    faqList.value = []
+    total.value = 0
+  } finally {
+    loading.value = false
   }
-]
-
-// 根据搜索关键词过滤FAQ（只搜索标题）
-const filteredFaqData = computed(() => {
-  if (!searchKeyword.value.trim()) {
-    return allFaqData
-  }
-  const keyword = searchKeyword.value.toLowerCase().trim()
-  return allFaqData.filter(faq =>
-    faq.question.toLowerCase().includes(keyword)
-  )
-})
+}
 
 // 监听URL参数变化
 watch(() => route.query.search_key, (newKeyword) => {
   searchKeyword.value = newKeyword || ''
+  fetchSearchResults()
+})
+
+// 页面加载时获取数据
+onMounted(() => {
+  fetchSearchResults()
 })
 </script>
 

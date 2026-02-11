@@ -44,6 +44,12 @@ const staticRoutes = [
     props: true
   },
   {
+    path: '/faq',
+    name: 'FAQ',
+    component: () => import('../views/HelpView.vue'),
+    meta: { title: '常见问题', navIndex: 5, isFaqPage: true }
+  },
+  {
     path: '/help-search',
     name: 'HelpSearch',
     component: () => import('../views/HelpSearchView.vue'),
@@ -56,7 +62,7 @@ const staticRoutes = [
     meta: { title: '帮助中心', navIndex: 5 }
   },
   {
-    path: '/arts_ds:id',
+    path: '/arts_ds/:id',
     name: 'HelpArticle',
     component: () => import('../views/HelpArticleView.vue'),
     meta: { title: '帮助详情', navIndex: 5 },
@@ -70,9 +76,9 @@ const staticRoutes = [
     children: [
       {
         path: '',
-        name: 'AdminHome',
-        component: () => import('../pages/admin/AdminHome.vue'),
-        meta: { title: '后台管理', requiresAuth: true }
+        name: 'AdminDashboard',
+        component: () => import('../pages/admin/AdminDashboard.vue'),
+        meta: { title: '仪表盘', requiresAuth: true }
       },
       {
         path: 'site-info',
@@ -93,10 +99,34 @@ const staticRoutes = [
         meta: { title: '轮播图管理 - 后台管理', requiresAuth: true }
       },
       {
+        path: 'company-info',
+        name: 'CompanyInfoManagement',
+        component: () => import('../pages/admin/CompanyInfoManagement.vue'),
+        meta: { title: '公司信息 - 后台管理', requiresAuth: true }
+      },
+      {
+        path: 'company-profile',
+        name: 'CompanyProfileManagement',
+        component: () => import('../pages/admin/CompanyProfileManagement.vue'),
+        meta: { title: '企业简介 - 后台管理', requiresAuth: true }
+      },
+      {
         path: 'system-settings',
         name: 'SystemSettings',
         component: () => import('../pages/admin/SystemSettings.vue'),
         meta: { title: '系统设置 - 后台管理', requiresAuth: true }
+      },
+      {
+        path: 'news',
+        name: 'NewsManagement',
+        component: () => import('../pages/admin/ArticleManagement.vue'),
+        meta: { title: '新闻管理 - 后台管理', requiresAuth: true, articleType: 'news' }
+      },
+      {
+        path: 'faq',
+        name: 'FaqManagement',
+        component: () => import('../pages/admin/ArticleManagement.vue'),
+        meta: { title: '常见问题 - 后台管理', requiresAuth: true, articleType: 'faq' }
       }
     ]
   },

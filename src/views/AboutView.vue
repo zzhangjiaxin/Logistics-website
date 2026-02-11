@@ -40,13 +40,13 @@
       <div class="profile">
         <div class="wrap">
           <div class="imgs">
-            <img src="@/assets/uploadfiles/20230706-133556.jpg" alt="">
+            <img :src="companyImage" alt="">
           </div>
           <div class="editorc">
             <p style="line-height:3;">
               <span style="font-size:24px;">
                 <span style="font-family: 微软雅黑, Verdana, Arial;">
-                  &nbsp; &nbsp; &nbsp; &nbsp;深圳市翔宇达运通国际货运代理有限公司成立于 2009 年 6 月，位于深圳市宝安区会展湾，是一家国际货运一级代理公司，国内服务网点涵盖深圳会展湾、深圳坂田、广州、义乌。公司主营美国、英国、墨西哥、欧洲的空运和海运专线。在美西、美中共设立3个海外仓，并配备专业清关团队，保证高效通关和配送，另外在越南设立分公司，建立了庞大、稳定的客户群体。截至 2022 年底，公司已经拥有 200多名专业人员，致力于发展出口国外的纯电池、电子烟和FBA客户群体，在行业中享有较高的声誉和影响力。公司提供咨询报价、客户开户、报关清关、货物操作、全程追踪、专车配送的门到门双清含税一条龙服务，秉承"不负所托，递遍全球"的使命,为客户提供优质的物流服务。
+                  {{ companyDescription }}
                 </span>
               </span>
             </p>
@@ -153,12 +153,15 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Navigation } from 'swiper/modules'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import { useScrollPosition } from '@/composables/useScrollPosition'
 import { useBannerData } from '@/composables/useBannerData'
+import { getPublicCompanyProfile } from '@/api/companyProfile'
+import { onDataChange } from '@/utils/crossTabSync'
+import { BASE_URL } from '@/utils/request'
 import defaultBannerBg from '@/assets/uploadfiles/20230706-133407.jpg'
 
 useScrollPosition()
@@ -178,7 +181,7 @@ const toggleMobileNav = () => {
   mobileNavOpen.value = !mobileNavOpen.value
 }
 
-// 荣誉资质图片
+// 荣誉资质默认图片
 import cert1 from '@/assets/thumbs/20230715-154422.jpg'
 import cert2 from '@/assets/thumbs/20231013-111945.jpg'
 import cert3 from '@/assets/thumbs/20231013-110459.jpg'
@@ -189,9 +192,12 @@ import cert7 from '@/assets/thumbs/20230715-162458.jpg'
 import cert8 from '@/assets/thumbs/20230715-162511.jpg'
 import cert9 from '@/assets/thumbs/20230715-154116.jpg'
 import cert10 from '@/assets/thumbs/20230715-153723.jpg'
+import defaultCompanyImg from '@/assets/uploadfiles/20230706-133556.jpg'
 
-// 硬编码发展历程数据
-const historyItems = [
+// 默认数据
+const defaultDescription = '深圳市翔宇达运通国际货运代理有限公司成立于 2009 年 6 月，位于深圳市宝安区会展湾，是一家国际货运一级代理公司，国内服务网点涵盖深圳会展湾、深圳坂田、广州、义乌。公司主营美国、英国、墨西哥、欧洲的空运和海运专线。在美西、美中共设立3个海外仓，并配备专业清关团队，保证高效通关和配送，另外在越南设立分公司，建立了庞大、稳定的客户群体。截至 2022 年底，公司已经拥有 200多名专业人员，致力于发展出口国外的纯电池、电子烟和FBA客户群体，在行业中享有较高的声誉和影响力。公司提供咨询报价、客户开户、报关清关、货物操作、全程追踪、专车配送的门到门双清含税一条龙服务，秉承"不负所托，递遍全球"的使命,为客户提供优质的物流服务。'
+
+const defaultHistoryItems = [
   { year: '2022', desc: '2022年，营收超6亿元。' },
   { year: '2021', desc: '2021年，营收超3亿元。' },
   { year: '2019', desc: '2019年，营收突破1亿元。' },
@@ -201,8 +207,7 @@ const historyItems = [
   { year: '2009', desc: '2009年，公司成立与深圳宝安。' }
 ]
 
-// 硬编码荣誉资质数据
-const certItems = [
+const defaultCertItems = [
   { name: '深圳市电池行业协会理事单位', image: cert1 },
   { name: '宝安区福海街道快递物流协会常务副会长单位', image: cert2 },
   { name: '坂田跨境电商物流协会副会长单位', image: cert3 },
@@ -214,6 +219,70 @@ const certItems = [
   { name: '中国深圳物博会FBA服务商TOP20', image: cert9 },
   { name: '广东省水路运输业务备案证明', image: cert10 }
 ]
+
+// 响应式数据
+const companyImage = ref(defaultCompanyImg)
+const companyDescription = ref(defaultDescription)
+const historyItems = ref(defaultHistoryItems)
+const certItems = ref(defaultCertItems)
+
+// 获取完整图片URL
+const getImageUrl = (path) => {
+  if (!path) return ''
+  if (path.startsWith('http')) return path
+  return BASE_URL + '/api' + path
+}
+
+// 从API加载数据
+const fetchCompanyProfile = async () => {
+  try {
+    const res = await getPublicCompanyProfile()
+    if (res.data) {
+      // 公司简介
+      if (res.data.companyIntro) {
+        if (res.data.companyIntro.image) {
+          companyImage.value = getImageUrl(res.data.companyIntro.image)
+        }
+        if (res.data.companyIntro.description) {
+          companyDescription.value = res.data.companyIntro.description
+        }
+      }
+
+      // 发展历程
+      if (res.data.historyItems && res.data.historyItems.length > 0) {
+        historyItems.value = res.data.historyItems
+          .filter(item => item.isEnabled === 1)
+          .map(item => ({
+            year: item.year,
+            desc: item.description
+          }))
+      }
+
+      // 荣誉资质
+      if (res.data.honorItems && res.data.honorItems.length > 0) {
+        certItems.value = res.data.honorItems
+          .filter(item => item.isEnabled === 1)
+          .map(item => ({
+            name: item.name,
+            image: getImageUrl(item.imageUrl)
+          }))
+      }
+    }
+  } catch (error) {
+    console.error('获取企业简介失败，使用默认数据:', error)
+  }
+}
+
+onMounted(() => {
+  fetchCompanyProfile()
+
+  // 监听后台数据变更，自动刷新
+  onDataChange((payload) => {
+    if (payload.type === 'company-profile') {
+      fetchCompanyProfile()
+    }
+  })
+})
 
 const onNameClick = (swiper) => {
   if (imgSwiper.value && swiper.clickedIndex !== undefined) {

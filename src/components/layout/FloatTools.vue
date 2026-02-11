@@ -5,11 +5,23 @@
     <li class="s3"><router-link to="/track"></router-link></li>
     <li class="s4">
       <router-link to="/contact">
-        <p>400-836-9156</p>
+        <p>{{ mainPhone }}</p>
       </router-link>
     </li>
   </ul>
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { useCompanyInfoStore } from '@/stores'
+
+const companyInfoStore = useCompanyInfoStore()
+
+const mainPhone = computed(() => {
+  const branches = companyInfoStore.branches
+  if (branches && branches.length > 0) {
+    return branches[0].phone || '400-836-9156'
+  }
+  return '400-836-9156'
+})
 </script>

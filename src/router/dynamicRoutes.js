@@ -117,18 +117,6 @@ export const routeMap = {
     component: BusinessDetailView,
     name: 'BusinessLand',
     meta: { title: '陆运专线', type: 3 }
-  },
-
-  // 新闻中心 - 子菜单（使用独立组件 NewsCategoryView）
-  'news_company': {
-    component: NewsCategoryView,
-    name: 'NewsCompany',
-    meta: { title: '公司新闻', category: 1 }
-  },
-  'news_industry': {
-    component: NewsCategoryView,
-    name: 'NewsIndustry',
-    meta: { title: '行业动态', category: 2 }
   }
 }
 
@@ -191,29 +179,46 @@ export function generateRoutes(navigations) {
             console.log(`[动态路由] 注册子菜单路由: ${childBasePath} -> ${childRouteConfig.name} (title: ${child.name})`)
           }
         }
-        // 如果子菜单没有 code，但父级有 code，则子菜单共享父级的组件
+        // 如果子菜单没有 code，但父级有 code，则根据父级类型决定组件
         else if (nav.code && routeMap[nav.code]) {
-          const parentRouteConfig = routeMap[nav.code]
           const childBasePath = child.url.split('?')[0]
 
-          // 只有当子菜单的基础路径与父级不同时，才注册新路由
-          // 如果相同（如 /track 和 /track?type=parcel），则共享同一个路由
           if (!registeredPaths.has(childBasePath)) {
-            routes.push({
-              path: childBasePath,
-              name: `${parentRouteConfig.name}_${child.id}`, // 使用唯一的名称
-              component: parentRouteConfig.component,
-              meta: {
-                ...parentRouteConfig.meta,
-                title: child.name, // 使用导航 API 返回的名称
-                navigationId: child.id,
-                parentNavigationId: nav.id,
-                isChildRoute: true
-              }
-            })
+            // 新闻中心的子菜单使用 NewsCategoryView 组件
+            if (nav.code === 'news') {
+              routes.push({
+                path: childBasePath,
+                name: `NewsCategory_${child.id}`,
+                component: NewsCategoryView,
+                meta: {
+                  title: child.name,
+                  navigationId: child.id,
+                  parentNavigationId: nav.id,
+                  isChildRoute: true
+                }
+              })
 
-            registeredPaths.add(childBasePath)
-            console.log(`[动态路由] 注册子菜单路由（共享父级组件）: ${childBasePath} -> ${parentRouteConfig.name} (title: ${child.name})`)
+              registeredPaths.add(childBasePath)
+              console.log(`[动态路由] 注册新闻子分类路由: ${childBasePath} -> NewsCategoryView (title: ${child.name})`)
+            } else {
+              // 其他父级的子菜单共享父级组件
+              const parentRouteConfig = routeMap[nav.code]
+              routes.push({
+                path: childBasePath,
+                name: `${parentRouteConfig.name}_${child.id}`,
+                component: parentRouteConfig.component,
+                meta: {
+                  ...parentRouteConfig.meta,
+                  title: child.name,
+                  navigationId: child.id,
+                  parentNavigationId: nav.id,
+                  isChildRoute: true
+                }
+              })
+
+              registeredPaths.add(childBasePath)
+              console.log(`[动态路由] 注册子菜单路由（共享父级组件）: ${childBasePath} -> ${parentRouteConfig.name} (title: ${child.name})`)
+            }
           }
         }
       })
