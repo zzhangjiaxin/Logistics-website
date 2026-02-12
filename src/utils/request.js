@@ -42,6 +42,12 @@ request.interceptors.response.use(
     return res
   },
   error => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('adminName')
+      window.location.href = '/admin/login'
+      return Promise.reject(error)
+    }
     console.error('响应错误:', error)
     ElMessage.error(error.message || '网络错误')
     return Promise.reject(error)

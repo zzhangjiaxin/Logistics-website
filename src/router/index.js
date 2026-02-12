@@ -68,6 +68,18 @@ const staticRoutes = [
     meta: { title: '帮助详情', navIndex: 5 },
     props: true
   },
+  // /login 重定向到 /admin/login
+  {
+    path: '/login',
+    redirect: '/admin/login'
+  },
+  // 后台管理登录页（不需要认证）
+  {
+    path: '/admin/login',
+    name: 'AdminLogin',
+    component: () => import('../pages/admin/AdminLogin.vue'),
+    meta: { title: '管理员登录', isLoginPage: true }
+  },
   // 后台管理路由（使用独立布局）
   {
     path: '/admin',
@@ -127,6 +139,12 @@ const staticRoutes = [
         name: 'FaqManagement',
         component: () => import('../pages/admin/ArticleManagement.vue'),
         meta: { title: '常见问题 - 后台管理', requiresAuth: true, articleType: 'faq' }
+      },
+      {
+        path: 'profile',
+        name: 'AdminProfile',
+        component: () => import('../pages/admin/AdminProfile.vue'),
+        meta: { title: '个人信息 - 后台管理', requiresAuth: true }
       }
     ]
   },
@@ -207,6 +225,28 @@ export function registerDynamicRoutes(navigations) {
 }
 
 export default router
+
+// 路由前置守卫：后台管理页面需要登录
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('token')
+
+  // 已登录时访问登录页，直接跳到后台
+  if (to.meta.isLoginPage && token) {
+    next({ path: '/admin' })
+    return
+  }
+
+  // 需要认证的页面，没 token 跳登录
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+    if (!token) {
+      next({ path: '/admin/login', query: { redirect: to.fullPath } })
+    } else {
+      next()
+    }
+  } else {
+    next()
+  }
+})
 
 // 路由后置守卫：动态设置页面标题
 router.afterEach((to) => {

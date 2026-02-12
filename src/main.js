@@ -30,24 +30,29 @@ app.use(pinia)
 
 // 初始化应用：加载导航配置并注册动态路由
 async function initApp() {
-  try {
-    console.log('[应用初始化] 开始加载导航配置...')
+  // 后台管理和登录页不需要等导航数据
+  const isAdminPath = window.location.pathname.startsWith('/admin') || window.location.pathname === '/login'
 
-    // 从后端获取导航配置
-    const res = await getEnabledNavigationTree()
+  if (!isAdminPath) {
+    try {
+      console.log('[应用初始化] 开始加载导航配置...')
 
-    if (res.data && res.data.length > 0) {
-      console.log('[应用初始化] 导航配置加载成功')
+      // 从后端获取导航配置
+      const res = await getEnabledNavigationTree()
 
-      // 注册动态路由
-      registerDynamicRoutes(res.data)
+      if (res.data && res.data.length > 0) {
+        console.log('[应用初始化] 导航配置加载成功')
 
-      console.log('[应用初始化] 动态路由注册完成')
-    } else {
-      console.warn('[应用初始化] 未获取到导航配置，使用默认路由')
+        // 注册动态路由
+        registerDynamicRoutes(res.data)
+
+        console.log('[应用初始化] 动态路由注册完成')
+      } else {
+        console.warn('[应用初始化] 未获取到导航配置，使用默认路由')
+      }
+    } catch (error) {
+      console.error('[应用初始化] 加载导航配置失败，使用默认路由', error)
     }
-  } catch (error) {
-    console.error('[应用初始化] 加载导航配置失败，使用默认路由', error)
   }
 
   // 注册路由和挂载应用

@@ -1,7 +1,10 @@
 <template>
   <div id="main">
+    <!-- 路由未就绪时不渲染任何布局，避免闪烁 -->
+    <template v-if="!routerReady" />
+
     <!-- 后台管理使用独立布局 -->
-    <template v-if="isAdminRoute">
+    <template v-else-if="isAdminRoute">
       <router-view />
     </template>
 
@@ -34,6 +37,12 @@ const uiStore = useUIStore()
 const siteStore = useSiteStore()
 const companyInfoStore = useCompanyInfoStore()
 
+// 等路由解析完成后再渲染布局，避免闪烁前端壳子
+const routerReady = ref(false)
+router.isReady().then(() => {
+  routerReady.value = true
+})
+
 // 注入 router 实例到 siteStore，供 updatePageTitle 使用（避免循环依赖）
 siteStore.setRouter(router)
 
@@ -42,7 +51,7 @@ const appHeaderRef = ref(null)
 const mobileMenuRef = ref(null)
 
 // 判断是否是后台管理路由
-const isAdminRoute = computed(() => route.path.startsWith('/admin'))
+const isAdminRoute = computed(() => route.path.startsWith('/admin') || route.path === '/login')
 
 // keep-alive 缓存列表
 const cachedViews = ref(['HomeView', 'NewsView', 'NewsCategoryView', 'AboutView', 'BusinessView'])

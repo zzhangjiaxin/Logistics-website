@@ -90,7 +90,23 @@
           </el-breadcrumb>
         </div>
         <div class="header-right">
-          <span class="admin-user">管理员</span>
+          <el-dropdown trigger="click" @command="handleCommand">
+            <div class="user-info">
+              <div class="user-avatar">{{ adminName.charAt(0) }}</div>
+              <span class="user-name">{{ adminName }}</span>
+              <el-icon class="arrow-icon"><ArrowDown /></el-icon>
+            </div>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="profile">
+                  <el-icon><UserFilled /></el-icon>我的信息
+                </el-dropdown-item>
+                <el-dropdown-item command="logout" divided>
+                  <el-icon><SwitchButton /></el-icon>退出登录
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </div>
       </header>
 
@@ -120,11 +136,30 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Menu, Setting, Tools, Picture, OfficeBuilding, Document, DocumentCopy, Expand, Phone, DataAnalysis } from '@element-plus/icons-vue'
+import { Menu, Setting, Tools, Picture, OfficeBuilding, Document, DocumentCopy, Expand, Phone, DataAnalysis, ArrowDown, UserFilled, SwitchButton } from '@element-plus/icons-vue'
+import { ElMessageBox } from 'element-plus'
 
 const route = useRoute()
 const router = useRouter()
 const routeKey = ref(0)
+
+const adminName = computed(() => localStorage.getItem('adminName') || '管理员')
+
+const handleCommand = (command) => {
+  if (command === 'profile') {
+    router.push('/admin/profile')
+  } else if (command === 'logout') {
+    ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }).then(() => {
+      localStorage.removeItem('token')
+      localStorage.removeItem('adminName')
+      router.push('/admin/login')
+    }).catch(() => {})
+  }
+}
 
 // 打开的标签页列表（仪表盘固定第一个）
 const openedTabs = ref([{ path: '/admin', title: '仪表盘' }])
@@ -139,7 +174,8 @@ const pageTitles = {
   '/admin/company-profile': '企业简介',
   '/admin/news': '新闻管理',
   '/admin/faq': '常见问题',
-  '/admin/system-settings': '系统设置'
+  '/admin/system-settings': '系统设置',
+  '/admin/profile': '个人信息'
 }
 
 // 当前激活的菜单项
@@ -346,9 +382,41 @@ const handleMenuDblClick = (index) => {
   align-items: center;
 }
 
-.admin-user {
-  color: #606266;
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.user-info:hover {
+  background-color: #f5f7fa;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #409eff, #304156);
+  color: #fff;
   font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-name {
+  font-size: 14px;
+  color: #303133;
+}
+
+.arrow-icon {
+  font-size: 12px;
+  color: #909399;
 }
 
 /* 页面内容 */
