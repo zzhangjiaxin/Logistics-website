@@ -1,8 +1,5 @@
 <template>
   <div class="login-page">
-    <!-- 粒子背景 -->
-    <canvas ref="canvasRef" class="particle-canvas"></canvas>
-
     <!-- 光晕 -->
     <div class="bg-layer">
       <div class="glow glow-1"></div>
@@ -45,6 +42,9 @@
         <div class="divider-line"></div>
       </div>
     </div>
+
+    <!-- 全屏粒子层（最顶层，穿透一切） -->
+    <canvas ref="canvasRef" class="particle-canvas"></canvas>
   </div>
 </template>
 
@@ -83,7 +83,7 @@ const handleLogin = async () => {
   } catch (e) { /* interceptor */ } finally { loading.value = false }
 }
 
-// ===== 粒子动画 =====
+// ===== 3D 粒子动画（全部在最顶层，穿透卡片） =====
 let animId = null
 onMounted(() => {
   const canvas = canvasRef.value
@@ -97,31 +97,49 @@ onMounted(() => {
   }
 
   function initParticles() {
-    const count = Math.floor((w * h) / 12000)
-    particles = Array.from({ length: count }, () => ({
-      x: Math.random() * w,
-      y: Math.random() * h,
-      r: Math.random() * 1.5 + 0.5,
-      dx: (Math.random() - 0.5) * 0.4,
-      dy: (Math.random() - 0.5) * 0.4,
-      o: Math.random() * 0.5 + 0.1
-    }))
+    const count = Math.floor((w * h) / 10000)
+    particles = Array.from({ length: count }, () => {
+      const layer = Math.random()
+      let r, speed, o, blur
+      if (layer < 0.35) {
+        // 远景层：小、暗、慢
+        r = Math.random() * 1 + 0.5; speed = 0.15; o = Math.random() * 0.25 + 0.1; blur = 0
+      } else if (layer < 0.7) {
+        // 中景层
+        r = Math.random() * 2 + 1.5; speed = 0.4; o = Math.random() * 0.35 + 0.3; blur = 0
+      } else if (layer < 0.9) {
+        // 近景层：大、亮、快
+        r = Math.random() * 3 + 2.5; speed = 0.6; o = Math.random() * 0.4 + 0.45; blur = 0
+      } else {
+        // 最前景：很大、带模糊、飘在最前面
+        r = Math.random() * 5 + 4; speed = 0.9; o = Math.random() * 0.3 + 0.2; blur = Math.random() * 3 + 1.5
+      }
+      return {
+        x: Math.random() * w, y: Math.random() * h, r, o, blur,
+        dx: (Math.random() - 0.5) * speed,
+        dy: (Math.random() - 0.5) * speed,
+        pulse: Math.random() * Math.PI * 2
+      }
+    })
   }
 
   function draw() {
     ctx.clearRect(0, 0, w, h)
 
     // 连线
+    const maxDist = 22500
     for (let i = 0; i < particles.length; i++) {
+      if (particles[i].blur > 0) continue // 最前景粒子不参与连线
       for (let j = i + 1; j < particles.length; j++) {
+        if (particles[j].blur > 0) continue
         const dx = particles[i].x - particles[j].x
         const dy = particles[i].y - particles[j].y
         const dist = dx * dx + dy * dy
-        if (dist < 14400) { // 120px
-          const alpha = (1 - dist / 14400) * 0.15
+        if (dist < maxDist) {
+          const alpha = (1 - dist / maxDist) * 0.3
           ctx.beginPath()
           ctx.strokeStyle = `rgba(56,189,248,${alpha})`
-          ctx.lineWidth = 0.5
+          ctx.lineWidth = 0.8
           ctx.moveTo(particles[i].x, particles[i].y)
           ctx.lineTo(particles[j].x, particles[j].y)
           ctx.stroke()
@@ -133,13 +151,36 @@ onMounted(() => {
     for (const p of particles) {
       p.x += p.dx
       p.y += p.dy
-      if (p.x < 0 || p.x > w) p.dx *= -1
-      if (p.y < 0 || p.y > h) p.dy *= -1
+      if (p.x < -50) p.x = w + 50
+      if (p.x > w + 50) p.x = -50
+      if (p.y < -50) p.y = h + 50
+      if (p.y > h + 50) p.y = -50
 
+      p.pulse += 0.015
+      const pulseO = p.o + Math.sin(p.pulse) * 0.12
+
+      if (p.blur > 0) {
+        ctx.save()
+        ctx.filter = `blur(${p.blur}px)`
+      }
+
+      // 外发光
+      const glowR = p.blur > 0 ? p.r * 6 : p.r * 4
+      const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR)
+      grd.addColorStop(0, `rgba(56,189,248,${pulseO * 0.6})`)
+      grd.addColorStop(1, 'rgba(56,189,248,0)')
+      ctx.beginPath()
+      ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2)
+      ctx.fillStyle = grd
+      ctx.fill()
+
+      // 实心
       ctx.beginPath()
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
-      ctx.fillStyle = `rgba(56,189,248,${p.o})`
+      ctx.fillStyle = `rgba(56,189,248,${pulseO})`
       ctx.fill()
+
+      if (p.blur > 0) ctx.restore()
     }
 
     animId = requestAnimationFrame(draw)
@@ -173,12 +214,14 @@ onUnmounted(() => { if (animId) cancelAnimationFrame(animId) })
   width: 100%;
   height: 100%;
   pointer-events: none;
+  z-index: 999;
 }
 
 .bg-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  z-index: 0;
 }
 
 .glow {
@@ -206,13 +249,13 @@ onUnmounted(() => { if (animId) cancelAnimationFrame(animId) })
 /* ===== 卡片 ===== */
 .login-card {
   position: relative;
-  z-index: 1;
+  z-index: 5;
   width: 400px;
   padding: 48px 40px 36px;
-  background: rgba(15, 23, 42, 0.75);
+  background: rgba(15, 23, 42, 0.55);
   border: 1px solid rgba(56, 189, 248, 0.12);
   border-radius: 16px;
-  backdrop-filter: blur(24px);
+  backdrop-filter: blur(16px);
   box-shadow:
     0 0 40px rgba(56, 189, 248, 0.06),
     0 25px 50px rgba(0, 0, 0, 0.4);
