@@ -112,6 +112,34 @@
         </div>
       </el-card>
     </div>
+
+    <!-- 最新操作日志 -->
+    <el-card class="log-card">
+      <template #header>
+        <div class="log-card-header">
+          <span class="section-title">最新操作日志</span>
+          <el-button type="primary" text size="small" @click="goTo('/admin/logs')">查看全部</el-button>
+        </div>
+      </template>
+      <el-table :data="recentLogs" stripe style="width: 100%" size="small">
+        <el-table-column prop="userName" label="操作人" width="100" />
+        <el-table-column prop="operationType" label="类型" width="90" align="center">
+          <template #default="{ row }">
+            <el-tag :type="getTypeTag(row.operationType)" size="small">{{ getTypeLabel(row.operationType) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="module" label="模块" width="100" />
+        <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="status" label="结果" width="70" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">{{ row.status === 1 ? '成功' : '失败' }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="createdAt" label="时间" width="170">
+          <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
+        </el-table-column>
+      </el-table>
+    </el-card>
   </div>
 </template>
 
@@ -120,10 +148,22 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { DocumentCopy, QuestionFilled, Picture, Menu, Setting, Phone, OfficeBuilding, Tools, Monitor } from '@element-plus/icons-vue'
 import { getDashboardStats } from '@/api/dashboard'
+import { getRecentTenantLogs } from '@/api/logs'
 
 const router = useRouter()
 const loading = ref(false)
 const stats = ref({})
+const recentLogs = ref([])
+
+const typeMap = { LOGIN: '登录', CREATE: '创建', UPDATE: '更新', DELETE: '删除', TOGGLE: '切换状态' }
+const tagMap = { LOGIN: 'warning', CREATE: 'success', UPDATE: 'primary', DELETE: 'danger', TOGGLE: 'info' }
+const getTypeLabel = (type) => typeMap[type] || type
+const getTypeTag = (type) => tagMap[type] || 'info'
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '-'
+  return new Date(dateStr).toLocaleString('zh-CN')
+}
 
 const overviewData = computed(() => [
   {
@@ -181,10 +221,14 @@ const goToFrontend = () => {
 const fetchStats = async () => {
   loading.value = true
   try {
-    const res = await getDashboardStats()
-    if (res.data) {
-      stats.value = res.data
+    const [statsRes, logRes] = await Promise.all([
+      getDashboardStats(),
+      getRecentTenantLogs(10)
+    ])
+    if (statsRes.data) {
+      stats.value = statsRes.data
     }
+    recentLogs.value = logRes.data || []
   } catch (error) {
     console.error('获取统计数据失败:', error)
   } finally {
@@ -271,12 +315,23 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 1fr 360px;
   gap: 20px;
+  margin-bottom: 24px;
 }
 
 .section-title {
   font-size: 16px;
   font-weight: 600;
   color: #303133;
+}
+
+.log-card {
+  margin-bottom: 24px;
+}
+
+.log-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 /* 快捷操作 */

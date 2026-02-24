@@ -129,6 +129,12 @@ const staticRoutes = [
         meta: { title: '系统设置 - 后台管理', requiresAuth: true }
       },
       {
+        path: 'logs',
+        name: 'LogManagement',
+        component: () => import('../pages/admin/LogManagement.vue'),
+        meta: { title: '日志信息 - 后台管理', requiresAuth: true }
+      },
+      {
         path: 'news',
         name: 'NewsManagement',
         component: () => import('../pages/admin/ArticleManagement.vue'),

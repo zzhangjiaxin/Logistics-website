@@ -73,6 +73,10 @@
             <el-icon><Tools /></el-icon>
             <span>系统设置</span>
           </el-menu-item>
+          <el-menu-item index="/admin/logs" @dblclick="handleMenuDblClick('/admin/logs')">
+            <el-icon><Document /></el-icon>
+            <span>日志信息</span>
+          </el-menu-item>
         </el-sub-menu>
         <!-- 后续可以添加更多菜单项 -->
       </el-menu>
@@ -175,6 +179,7 @@ const pageTitles = {
   '/admin/news': '新闻管理',
   '/admin/faq': '常见问题',
   '/admin/system-settings': '系统设置',
+  '/admin/logs': '日志信息',
   '/admin/profile': '个人信息'
 }
 
@@ -196,7 +201,7 @@ const defaultOpeneds = computed(() => {
     return ['article-content']
   }
   // 如果当前路由在"设置"子菜单下，则展开该子菜单
-  if (route.path === '/admin/system-settings') {
+  if (route.path === '/admin/system-settings' || route.path === '/admin/logs') {
     return ['settings']
   }
   return []
